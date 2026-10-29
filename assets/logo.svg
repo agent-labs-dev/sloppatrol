@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Sloppatrol</title>
+  <defs>
+    <linearGradient id="sp-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c2140"/>
+      <stop offset="1" stop-color="#0a0d1a"/>
+    </linearGradient>
+    <linearGradient id="sp-cyan" gradientUnits="userSpaceOnUse" x1="0" y1="40" x2="0" y2="216">
+      <stop offset="0" stop-color="#cffafe"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <radialGradient id="sp-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#67e8f9" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#67e8f9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#sp-bg)"/>
+  <circle cx="128" cy="128" r="96" fill="url(#sp-glow)"/>
+  <!-- The sparkle: a 7 by 7 pixel star, the shine of clean code. -->
+  <g fill="url(#sp-cyan)">
+    <rect x="118" y="66" width="20" height="20" rx="3.5"/>
+    <rect x="118" y="92" width="20" height="20" rx="3.5"/>
+    <rect x="92" y="118" width="20" height="20" rx="3.5"/>
+    <rect x="118" y="118" width="20" height="20" rx="3.5"/>
+    <rect x="144" y="118" width="20" height="20" rx="3.5"/>
+    <rect x="40" y="144" width="20" height="20" rx="3.5"/>
+    <rect x="66" y="144" width="20" height="20" rx="3.5"/>
+    <rect x="92" y="144" width="20" height="20" rx="3.5"/>
+    <rect x="118" y="144" width="20" height="20" rx="3.5"/>
+    <rect x="144" y="144" width="20" height="20" rx="3.5"/>
+    <rect x="170" y="144" width="20" height="20" rx="3.5"/>
+    <rect x="196" y="144" width="20" height="20" rx="3.5"/>
+    <rect x="92" y="170" width="20" height="20" rx="3.5"/>
+    <rect x="118" y="170" width="20" height="20" rx="3.5"/>
+    <rect x="144" y="170" width="20" height="20" rx="3.5"/>
+    <rect x="118" y="196" width="20" height="20" rx="3.5"/>
+  </g>
+</svg>
