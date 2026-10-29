@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.DS_Store
+*.log
+
+# Sloppatrol local data: checkouts, worktrees, agent sessions, check results.
+# The config and the instructions are committed.
+**/.sloppatrol/runs/
+
+.env
+.env.*
+!.env.example
