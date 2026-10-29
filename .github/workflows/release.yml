@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: sloppatrol-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Must match the environment on the npm trusted publisher; the environment
+    # itself only allows deployments from main.
+    environment: npm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # No `version:` here: it is read from package.json's packageManager.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - run: npm install -g npm@^11.5.1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm knip
+      - run: pnpm test
+      - name: Bump package version
+        id: version
+        # The newest v* tag holds the last release. The main rules do not let
+        # this workflow push, so the version on main can be older than the tag.
+        run: |
+          last=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          if [ -n "$last" ]; then
+            npm version "${last#v}" --no-git-tag-version --allow-same-version
+          fi
+          npm version ${{ inputs.bump }} --no-git-tag-version
+          version=$(node -p "require('./package.json').version")
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+      - run: pnpm build
+      - name: Smoke test package
+        run: |
+          test "$(node dist/cli/index.js --version)" = "${{ steps.version.outputs.value }}"
+          node dist/cli/index.js --help
+          # The dashboard serves ui/ and the roles read playbook/: both must ship.
+          npm pack --dry-run --json | node -e "
+            const files = JSON.parse(require('fs').readFileSync(0, 'utf8'))[0].files.map((f) => f.path);
+            for (const need of ['dist/cli/index.js', 'ui/index.html', 'playbook/principles.md'])
+              if (!files.includes(need)) throw new Error('The package is missing ' + need);
+            if (files.some((f) => f.includes('/tests/'))) throw new Error('The package ships tests');
+          "
+      # No token: npm trusts this workflow through OIDC (id-token: write) and
+      # attaches provenance on its own.
+      - name: Publish to npm
+        run: npm publish
+      # The release commit lives only on its tag. No ruleset covers tags.
+      - name: Commit and tag
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json
+          git commit -m "release: sloppatrol v${{ steps.version.outputs.value }}"
+          git tag "v${{ steps.version.outputs.value }}"
+          git push origin "v${{ steps.version.outputs.value }}"
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ steps.version.outputs.value }}" --generate-notes
