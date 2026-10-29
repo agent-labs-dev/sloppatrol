@@ -2,7 +2,8 @@ import type { CheckResult } from '../../domain/index.js';
 
 /** How test runners report the tests that passed, most specific first. */
 const PATTERNS: RegExp[] = [
-  /ℹ pass (\d+)/, // node:test
+  /ℹ pass (\d+)/, // node:test, spec reporter
+  /^# pass (\d+)/m, // TAP: node:test when its output is not a terminal, and other TAP runners
   /Tests:?\s+(?:\d+ \w+ \| )*(\d+) passed/, // vitest, jest
   /test result: ok\. (\d+) passed/g, // cargo, one line per crate
   /(\d+) passed/, // pytest
