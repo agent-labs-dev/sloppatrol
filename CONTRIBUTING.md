@@ -22,3 +22,11 @@ Sloppatrol follows its own [playbook](playbook/principles.md).
 - Test through a module's root files, like any other caller.
 - No mocking library. Use real git repos in a temp folder, real processes, the in-memory `FakeGitHub`, and the scripted agent in `src/patrol/tests/fake-agent.mjs`.
 - Assert on outcomes: saved records, the pull requests the fake received, the files in a worktree.
+
+## Release
+
+Run the **Release** workflow from `main` in GitHub Actions, and pick `patch`, `minor` or `major`.
+
+- The workflow runs the checks and the tests, bumps the version from the newest `v*` tag, and publishes to npm.
+- npm trusts the workflow through OIDC, so no npm token is stored. The trusted publisher names `release.yml` and the `npm` environment.
+- The release commit lives only on its `v*` tag, and the workflow opens a GitHub release for it.

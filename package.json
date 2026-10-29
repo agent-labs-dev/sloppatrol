@@ -15,6 +15,7 @@
     "dist",
     "!dist/**/tests",
     "playbook",
+    "ui",
     "LICENSE",
     "NOTICE"
   ],
