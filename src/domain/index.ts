@@ -27,5 +27,6 @@ export {
   sideOf,
   titleOf,
 } from './lib/opportunity.js';
+export { pickOpportunities } from './lib/pick.js';
 export type { Improvement, Mutation, Proof } from './lib/proof.js';
 export type { GateVerdict, Refactor, Review } from './lib/refactor.js';

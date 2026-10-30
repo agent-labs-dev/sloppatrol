@@ -1,12 +1,11 @@
 import type { LoadedConfig } from '../../config/index.js';
-import type { Opportunity, Refactor, Scorecard } from '../../domain/index.js';
+import { type Opportunity, pickOpportunities, type Refactor, type Scorecard } from '../../domain/index.js';
 import { listFiles } from '../../git/index.js';
 import { type SurveyResult, survey } from '../../roles/index.js';
 import { attempt } from './attempt.js';
 import { type Base, openBase, roleContext } from './base.js';
 import type { PatrolDeps } from './deps.js';
 import { exclusive } from './lock.js';
-import { pickOpportunities } from './pick.js';
 import { retireInvalid } from './retire.js';
 import { scorecardFor } from './scorecard.js';
 
