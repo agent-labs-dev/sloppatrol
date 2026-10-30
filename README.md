@@ -57,13 +57,13 @@ flowchart TB
 
 ## The dashboard
 
-`npx sloppatrol` serves a live dashboard on http://127.0.0.1:4322. The **Scorecard** shows the quality of the whole repo: each metric, its trend, your repo's guardrails, and the score of each file.
+`npx sloppatrol` serves a live dashboard on http://127.0.0.1:4322. The **Overview** tells you at a glance if the patrol is healthy: the checks on main, what waits for your decision, the code quality and its change, and the last cycle. Then it lists what needs attention, with the command to run next.
 
 <p align="center">
-  <img src="assets/dashboard.png" alt="The Scorecard tab of the dashboard on a demo project: seven metrics in red, yellow or green, the repo guardrails, and the scores of each file." width="100%">
+  <img src="assets/dashboard.png" alt="The Overview of the dashboard on a demo project: a status band, the items that need attention with their commands, the agents, the code quality per metric, and the refactor results." width="100%">
 </p>
 
-The dashboard also shows each refactor as a pipeline with its proof, every check run, the backlog, and every agent session. [The dashboard](docs/dashboard.md) tells more.
+The other pages show each refactor as a pipeline with its proof, the scorecard of each file, every check run, the backlog in the order the refactorer picks it, and every agent session. [The dashboard](docs/dashboard.md) tells more.
 
 ## Set up with your agent
 
@@ -111,7 +111,7 @@ To set it up by hand, read [Getting started](docs/getting-started.md).
 | [Commands](docs/commands.md) | All the CLI commands |
 | [Configuration](docs/configuration.md) | All the settings in `.sloppatrol/sloppatrol.yml` |
 | [Agents and models](docs/models.md) | The agent of each role, and the model providers |
-| [The dashboard](docs/dashboard.md) | What each tab shows |
+| [The dashboard](docs/dashboard.md) | What each page shows |
 | [Playbook](playbook/principles.md) | The engineering practice that the agents follow |
 | [Glossary](GLOSSARY.md) | The words Sloppatrol uses, with one meaning each |
 | [Decisions](docs/adr/) | Why Sloppatrol works this way |
