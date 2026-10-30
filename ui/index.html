@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sloppatrol</title>
     <link rel="stylesheet" href="/style.css" />
+    <script>
+      {
+        // Before the first paint: the saved choice, or else the system setting. app.js owns the button.
+        const saved = localStorage.getItem('sloppatrol-theme');
+        const system = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = saved === 'light' || saved === 'dark' ? saved : system;
+      }
+    </script>
   </head>
   <body>
     <header class="top">
@@ -13,23 +21,37 @@
         <span class="name">sloppatrol</span>
         <span class="project" id="project"></span>
       </div>
-      <div class="meta" id="meta"></div>
+      <nav class="tabs" aria-label="Pages">
+        <a href="#overview" data-tab="overview">Overview</a>
+        <a href="#refactors" data-tab="refactors">Refactors</a>
+        <a href="#scorecard" data-tab="scorecard">Scorecard</a>
+        <a href="#checks" data-tab="checks">Checks</a>
+        <a href="#backlog" data-tab="backlog">Backlog</a>
+        <a href="#sessions" data-tab="sessions">Sessions</a>
+      </nav>
+      <div class="tools">
+        <span class="activity" id="activity" role="status"></span>
+        <a
+          class="icon-button"
+          href="https://github.com/agent-labs-dev/sloppatrol/blob/main/docs/dashboard.md"
+          target="_blank"
+          rel="noreferrer"
+          title="Read the dashboard docs"
+          ><svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2.5 3.5c2-.8 3.8-.6 5.5.6v9c-1.7-1.2-3.5-1.4-5.5-.6zM13.5 3.5c-2-.8-3.8-.6-5.5.6v9c1.7-1.2 3.5-1.4 5.5-.6z" /></svg
+          ><span class="sr-only">Read the dashboard docs</span></a
+        >
+        <button type="button" class="icon-button" id="theme"></button>
+      </div>
     </header>
 
-    <section class="lanes" id="lanes" aria-label="Agents"></section>
-    <section class="stats" id="stats" aria-label="Totals"></section>
-
-    <nav class="tabs" aria-label="Views">
-      <a href="#refactors" data-tab="refactors">Refactors</a>
-      <a href="#scorecard" data-tab="scorecard">Scorecard</a>
-      <a href="#checks" data-tab="checks">Checks</a>
-      <a href="#backlog" data-tab="backlog">Backlog</a>
-      <a href="#sessions" data-tab="sessions">Sessions</a>
-    </nav>
+    <div id="offline" class="offline" role="alert" hidden>
+      The dashboard cannot reach its server. Start it again with <code>sloppatrol dashboard</code>.
+    </div>
 
     <div class="layout">
-      <main id="view" aria-live="polite"></main>
-      <aside id="detail" class="detail" hidden></aside>
+      <main id="view"></main>
+      <aside id="detail" class="detail" aria-label="Details" hidden></aside>
     </div>
 
     <script src="/app.js" type="module"></script>
