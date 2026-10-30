@@ -4,6 +4,7 @@
  */
 export { AGENT_ROLES, type AgentEvent, type AgentRole, type AgentStatus } from './lib/agents.js';
 export type { CheckResult, CheckRun, GuardFinding } from './lib/checks.js';
+export type { Cycle } from './lib/cycle.js';
 export { newId } from './lib/ids.js';
 export {
   type Guardrail,
@@ -27,5 +28,6 @@ export {
   sideOf,
   titleOf,
 } from './lib/opportunity.js';
+export { pickOpportunities } from './lib/pick.js';
 export type { Improvement, Mutation, Proof } from './lib/proof.js';
 export type { GateVerdict, Refactor, Review } from './lib/refactor.js';

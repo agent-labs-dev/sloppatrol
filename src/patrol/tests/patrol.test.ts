@@ -5,7 +5,7 @@ import { createRuntime } from '../../agents/index.js';
 import { loadConfig } from '../../config/index.js';
 import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
-import { cycle, openBase, type PatrolDeps, refactorNow, scoreNow } from '../../patrol/index.js';
+import { cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
 import { fixtureRepo, gitIn, script } from './fixture.js';
 
@@ -125,6 +125,9 @@ describe('a patrol', () => {
       ['refactorer', 'passed'],
       ['gate', 'passed'],
     ]);
+    expect(await deps.store.listCycles()).toMatchObject([
+      { sha: refactored.baseSha, surveyed: 1, refactors: [{ id: refactored.id, status: 'verified' }], published: 1 },
+    ]);
 
     github.setState(pr.url, 'merged');
     script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);
@@ -197,6 +200,28 @@ describe('a patrol', () => {
 
     expect(result.blocked).toMatch(/^The check test fails on [0-9a-f]{10}/);
     expect(await deps.store.listOpportunities()).toEqual([]);
+    expect(await deps.store.listCycles()).toMatchObject([{ blocked: result.blocked, refactors: [], published: 0 }]);
+  });
+
+  it('ends the agent sessions that a stopped Sloppatrol left open', async () => {
+    const { loaded, deps } = await setUp();
+    const open = {
+      sessionId: 's-open',
+      role: 'refactorer',
+      subject: 'refactor:r1',
+      at: '2026-01-01T00:00:00.000Z',
+    } as const;
+    await deps.store.appendEvent({ ...open, kind: 'start', summary: 'refactorer started.' });
+    script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);
+
+    await surveyNow(loaded, deps);
+
+    expect((await deps.store.events('s-open')).at(-1)).toMatchObject({
+      kind: 'error',
+      role: 'refactorer',
+      subject: 'refactor:r1',
+      summary: 'Interrupted: Sloppatrol stopped.',
+    });
   });
 
   it('runs the checks on main once per commit, and again when the check commands change', async () => {

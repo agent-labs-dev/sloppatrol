@@ -1,4 +1,5 @@
-import type { Opportunity, Refactor, Strength } from '../../domain/index.js';
+import type { Opportunity, Strength } from './opportunity.js';
+import type { Refactor } from './refactor.js';
 
 const RANK: Record<Strength, number> = { strong: 0, 'worth-exploring': 1, speculative: 2 };
 

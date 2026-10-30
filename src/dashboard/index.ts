@@ -2,9 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { createServer, type ServerResponse } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import type { Store } from '../store/index.js';
-import { snapshot } from './lib/snapshot.js';
+import { snapshots } from './lib/snapshot.js';
 
 export type { DashboardState } from './lib/snapshot.js';
+export type { ProjectSummary } from './lib/summary.js';
 
 /** Shipped in the npm package next to `dist/`. */
 const UI = fileURLToPath(new URL('../../ui/', import.meta.url));
@@ -25,9 +26,17 @@ export type Dashboard = { url: string; close(): Promise<void> };
 /**
  * A read-only local page over the store: the agents, the backlog, the
  * refactors and their gate, and every check run, refreshed live.
+ * `/api/summary` holds every number the pages show, computed once here.
  */
-export async function startDashboard(options: { store: Store; project: string; port?: number }): Promise<Dashboard> {
+export async function startDashboard(options: {
+  store: Store;
+  project: string;
+  port?: number;
+  /** Whether a process runs, by its id. The tests pass their own. */
+  alive?: (pid: number) => boolean;
+}): Promise<Dashboard> {
   const { store } = options;
+  const read = snapshots(store, options.project, options.alive);
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? '/', 'http://localhost');
@@ -37,7 +46,8 @@ export async function startDashboard(options: { store: Store; project: string; p
         response.end(await readFile(`${UI}${file[0]}`));
         return;
       }
-      if (url.pathname === '/api/state') return json(response, 200, await snapshot(store, options.project));
+      if (url.pathname === '/api/state') return json(response, 200, await read.state());
+      if (url.pathname === '/api/summary') return json(response, 200, await read.summary());
       const [, api, kind, id] = url.pathname.split('/');
       if (api === 'api' && id && ID.test(id)) {
         if (kind === 'sessions') return json(response, 200, await store.events(id));
