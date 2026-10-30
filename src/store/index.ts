@@ -5,6 +5,7 @@ import type {
   AgentEvent,
   AgentStatus,
   CheckRun,
+  Cycle,
   Opportunity,
   Refactor,
   Scorecard,
@@ -66,6 +67,14 @@ export class Store {
     return (await this.listCheckRuns()).findLast(
       (run) => run.purpose === 'base' && run.sha === sha && run.checksKey === checksKey && run.status !== 'running',
     );
+  }
+
+  saveCycle(cycle: Cycle): Promise<void> {
+    return writeJson(this.path('cycles', `${cycle.id}.json`), cycle);
+  }
+  /** Oldest first. */
+  listCycles(): Promise<Cycle[]> {
+    return readJsonFolder(this.path('cycles'));
   }
 
   /** A file's scores, by the hash of its path, content and rubric: the same file is judged once. */

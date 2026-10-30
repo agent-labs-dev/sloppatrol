@@ -1,5 +1,5 @@
 import type { LoadedConfig } from '../../config/index.js';
-import { pickOpportunities, type Refactor } from '../../domain/index.js';
+import { type Cycle, newId, pickOpportunities, type Refactor } from '../../domain/index.js';
 import { listFiles } from '../../git/index.js';
 import { survey } from '../../roles/index.js';
 import { attempt } from './attempt.js';
@@ -24,11 +24,40 @@ export type CycleResult = {
  * opportunities, and verified refactors become pull requests.
  */
 export async function cycle(loaded: LoadedConfig, deps: PatrolDeps): Promise<CycleResult> {
+  const startedAt = new Date().toISOString();
+  const record = (result: Partial<CycleResult>, error?: string) => {
+    const saved: Cycle = {
+      id: newId(new Date(startedAt)),
+      ...(result.sha ? { sha: result.sha } : {}),
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      ...(result.blocked ? { blocked: result.blocked } : {}),
+      ...(error ? { error } : {}),
+      surveyed: result.surveyed ?? 0,
+      refactors: (result.refactors ?? []).map((r) => ({ id: r.id, status: r.status })),
+      published: result.published?.length ?? 0,
+    };
+    return deps.store.saveCycle(saved);
+  };
+  const progress: Partial<CycleResult> = {};
+  try {
+    const result = await work(loaded, deps, progress);
+    await record(result);
+    return result;
+  } catch (error) {
+    await record(progress, (error as Error).message.split('\n')[0]!.slice(0, 500));
+    throw error;
+  }
+}
+
+/** The cycle itself. `progress` holds what it did so far, for the record of a cycle that throws. */
+async function work(loaded: LoadedConfig, deps: PatrolDeps, progress: Partial<CycleResult>): Promise<CycleResult> {
   const { config } = loaded;
   const { store, log } = deps;
   await syncGithub(loaded, deps);
   const base = await openBase(loaded, deps);
   const result: CycleResult = { sha: base.sha, surveyed: 0, refactors: [], published: [] };
+  Object.assign(progress, { sha: base.sha });
   if (base.blocked) {
     log(base.blocked);
     return { ...result, blocked: base.blocked };
@@ -44,6 +73,7 @@ export async function cycle(loaded: LoadedConfig, deps: PatrolDeps): Promise<Cyc
   const surveyor = config.agents.surveyor;
   if (surveyor.enabled && open.length < surveyor.minBacklog && state.surveyedSha !== base.sha) {
     result.surveyed = (await survey(ctx, { dir: base.dir, sha: base.sha, census, scorecard })).recorded.length;
+    progress.surveyed = result.surveyed;
     await store.savePatrolState({ ...(await store.patrolState()), surveyedSha: base.sha });
   }
 
@@ -57,6 +87,7 @@ export async function cycle(loaded: LoadedConfig, deps: PatrolDeps): Promise<Cyc
       const why = refactor.reason ? ` - ${refactor.reason.split('\n')[0]}` : '';
       log(`refactor ${refactor.id} (${opportunity.title}): ${refactor.status}${why}`);
       result.refactors.push(refactor);
+      progress.refactors = result.refactors;
     }
   }
 
