@@ -65,6 +65,18 @@ flowchart TB
 
 The other pages show each refactor as a pipeline with its proof, the scorecard of each file, every check run, the backlog in the order the refactorer picks it, and every agent session. [The dashboard](docs/dashboard.md) tells more.
 
+## Share your scorecard
+
+```bash
+npx sloppatrol score
+```
+
+`sloppatrol score` scores each file of your repo, then opens the scorecard as a card to post. Download it as a PNG, or copy it. It does not run your checks, so it works on any repo.
+
+<p align="center">
+  <img src="assets/scorecard.png" alt="The share card of a demo project: an overall score of 81 in a green ring, a bar for each of the seven metrics, the repo guardrails, and the command npx sloppatrol score." width="100%">
+</p>
+
 ## Set up with your agent
 
 1. Install the Sloppatrol skill in your repo:

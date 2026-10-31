@@ -21,6 +21,7 @@ import { stopAll } from '../processes/index.js';
 import { scorecardMarkdown } from '../roles/index.js';
 import { Store } from '../store/index.js';
 import { intFlag, parseArgv, strFlag } from './lib/argv.js';
+import { openInBrowser } from './lib/browser.js';
 import { doctor } from './lib/doctor.js';
 import { init } from './lib/init.js';
 import { status } from './lib/status.js';
@@ -57,12 +58,14 @@ async function dashboard(store: Store, project: string, port: number | undefined
   }
 }
 
+const SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
+
 /**
  * Ctrl-C or a SIGTERM stops every check and agent CLI Sloppatrol started,
  * marks the running agents stopped, and exits. The next patrol cleans up
- * the interrupted refactor.
+ * the interrupted refactor. Returns a function that removes the handlers.
  */
-function stopOnSignal(store: Store): void {
+function stopOnSignal(store: Store): () => void {
   const stop = async (signal: NodeJS.Signals) => {
     stopAll();
     log(`sloppatrol: stopped (${signal}).`);
@@ -70,7 +73,10 @@ function stopOnSignal(store: Store): void {
       if (status.state === 'running') await store.setStatus({ role: status.role, state: 'idle', detail: 'Stopped.' });
     process.exit(130);
   };
-  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) process.once(signal, () => void stop(signal));
+  for (const signal of SIGNALS) process.once(signal, stop);
+  return () => {
+    for (const signal of SIGNALS) process.off(signal, stop);
+  };
 }
 
 function untilSigint(): Promise<void> {
@@ -128,8 +134,16 @@ async function main(args: string[]): Promise<number> {
       return refactor.status === 'verified' ? EXIT.ok : EXIT.failed;
     }
     case 'score': {
-      stopOnSignal(store);
+      const unwatch = stopOnSignal(store);
       out(scorecardMarkdown(await scoreNow(loaded, deps, intFlag(flags, 'files'))));
+      unwatch();
+      if (flags.dashboard === false) return EXIT.ok;
+      const server = await dashboard(store, loaded.config.project.name, intFlag(flags, 'port'));
+      const page = `${server.url}/#share`;
+      out(`\nThe scorecard, ready to share: ${page}\nCtrl-C stops the dashboard.`);
+      if (flags.open !== false) openInBrowser(page);
+      await untilSigint();
+      await server.close();
       return EXIT.ok;
     }
     case 'status':

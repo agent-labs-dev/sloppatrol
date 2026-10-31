@@ -8,6 +8,8 @@ import { type AssessedScores, type AssessUnit, assess, type RoleContext } from '
 
 /** About this many lines per assessor session: a large file gets a session of its own. */
 const BATCH_LINES = 2500;
+/** Tool calls a session needs besides the two per file (`get_unit`, `score_unit`): `list_units`, `finish`, and room to spare. */
+const SESSION_CALLS = 6;
 /** Sessions that run at once. */
 const PARALLEL = 3;
 
@@ -35,14 +37,18 @@ function nextToScore(unscored: File[], census: Census, budget: number): File[] {
   return [...picked, ...ordered.filter((f) => f.isTest && !picked.includes(f)).slice(0, budget - picked.length)];
 }
 
-/** Groups files into batches of about `BATCH_LINES` lines, one file at least. */
-function batches<T extends { text: string }>(units: T[]): T[][] {
+/**
+ * Groups files into batches of about `BATCH_LINES` lines, one file at least,
+ * and at most `maxUnits` files: many small files would use up the step
+ * budget of a session before it scored them all.
+ */
+function batches<T extends { text: string }>(units: T[], maxUnits: number): T[][] {
   const groups: T[][] = [];
   let current: T[] = [];
   let lines = 0;
   for (const unit of units) {
     const size = unit.text.split('\n').length;
-    if (current.length && lines + size > BATCH_LINES) {
+    if (current.length && (lines + size > BATCH_LINES || current.length >= maxUnits)) {
       groups.push(current);
       current = [];
       lines = 0;
@@ -61,7 +67,8 @@ async function assessInBatches(
   input: { dir: string; subject: string },
 ): Promise<AssessedScores> {
   const all: AssessedScores = new Map();
-  const queue = batches(units);
+  const maxUnits = Math.max(1, Math.floor((ctx.loaded.config.agents.assessor.maxSteps - SESSION_CALLS) / 2));
+  const queue = batches(units, maxUnits);
   const worker = async () => {
     for (let batch = queue.shift(); batch; batch = queue.shift()) {
       const scored = await assess(ctx, { units: batch, subject: input.subject, workdir: input.dir, blind: false });
@@ -99,6 +106,7 @@ export async function scorecardFor(
   }
   const fresh = nextToScore(unscored, input.census, budget);
   if (fresh.length) {
+    ctx.log(`scoring ${fresh.length} of ${files.length} files at ${input.sha.slice(0, 10)}`);
     await ctx.store.setStatus({
       role: 'assessor',
       state: 'running',

@@ -10,7 +10,7 @@ export function scorecardMarkdown(scorecard: Scorecard): string {
   const lines = [
     `# Scorecard at ${scorecard.sha.slice(0, 10)}: ${overall ?? '–'}% overall`,
     c
-      ? `Covers ${c.files} of ${c.totalFiles} files, ${share(c.lines, c.totalLines)} of the lines. Each cycle scores more; \`sloppatrol score --files <n>\` scores more now.`
+      ? `Covers ${c.files} of ${c.totalFiles} files, ${share(c.lines, c.totalLines)} of the lines. Each cycle scores more; \`sloppatrol score\` scores the rest now.`
       : '',
   ];
   for (const metric of METRICS) {

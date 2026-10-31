@@ -11,15 +11,31 @@ import type { RoleContext } from '../../roles/index.js';
 import { readRepoRules } from '../../rules/index.js';
 import type { PatrolDeps } from './deps.js';
 
-/** The patrolled commit, checked out, with the result of its checks. */
-export type Base = {
+/** The patrolled commit, checked out. */
+export type Checkout = {
   sha: string;
   /** A detached checkout of `sha` that no agent edits. */
   dir: string;
+};
+
+/** The patrolled commit, checked out, with the result of its checks. */
+export type Base = Checkout & {
   checks: CheckRun;
   /** Why no refactor can be verified on this commit, when none can. */
   blocked?: string;
 };
+
+/** Checks out the patrolled ref, and removes the checkouts of older commits. */
+export async function checkoutBase(loaded: LoadedConfig, deps: PatrolDeps): Promise<Checkout & { fresh: boolean }> {
+  const { config, source } = loaded;
+  const sha = await resolveRef(source, config.patrol.pull);
+  if (!sha) throw new Error(`Cannot resolve ${config.patrol.pull} in ${source}.`);
+  const dir = deps.store.path('checkouts', sha.slice(0, 12));
+  await pruneCheckouts(source, deps.store.path('checkouts'), dir);
+  const fresh = !existsSync(dir);
+  await checkout(source, dir, sha);
+  return { sha, dir, fresh };
+}
 
 /**
  * Checks out the patrolled ref and runs the checks there, once per commit.
@@ -30,14 +46,9 @@ export async function openBase(
   deps: PatrolDeps,
   options: { recheck?: boolean } = {},
 ): Promise<Base> {
-  const { config, source } = loaded;
+  const { config } = loaded;
   const { store, log } = deps;
-  const sha = await resolveRef(source, config.patrol.pull);
-  if (!sha) throw new Error(`Cannot resolve ${config.patrol.pull} in ${source}.`);
-  const dir = store.path('checkouts', sha.slice(0, 12));
-  await pruneCheckouts(source, store.path('checkouts'), dir);
-  const fresh = !existsSync(dir);
-  await checkout(source, dir, sha);
+  const { sha, dir, fresh } = await checkoutBase(loaded, deps);
   let checks = options.recheck ? undefined : await store.baseCheckRun(sha, checksKey(config.checks));
   if (!checks) {
     log(`checking ${config.patrol.pull} at ${sha.slice(0, 10)}`);
@@ -68,7 +79,7 @@ async function pruneCheckouts(source: string, root: string, keep: string): Promi
 export async function roleContext(
   loaded: LoadedConfig,
   deps: PatrolDeps,
-  base: Base,
+  base: Checkout,
 ): Promise<{ ctx: RoleContext; census: Census }> {
   const census = await takeCensus(base.dir, loaded.config);
   const playbook = await playbookFor(census.stack);
