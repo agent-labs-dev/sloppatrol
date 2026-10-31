@@ -26,7 +26,7 @@ export function scorecardMarkdown(scorecard: Scorecard): string {
       );
     lines.push(`## ${metric.name} (\`${metric.id}\`): ${toPercent(mean)}%\n${worst.join('\n')}`);
   }
-  const missing = (scorecard.guardrails ?? []).filter((g) => !g.present);
+  const missing = (scorecard.guardrails ?? []).filter((g) => !g.present && !g.informational);
   if (missing.length)
     lines.push(
       `## Missing repo guardrails (a person must add these; config files are frozen)\n${missing.map((g) => `  - ${g.name}: ${g.evidence}`).join('\n')}`,

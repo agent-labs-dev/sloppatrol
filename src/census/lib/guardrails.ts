@@ -2,47 +2,36 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Guardrail } from '../../domain/index.js';
-import type { Stack } from './stack.js';
+import { describeCommitHook } from './commit-hook.js';
+import { detectStrictTypes } from './strict-types.js';
 
 async function read(root: string, file: string): Promise<string> {
   const path = join(root, file);
   return existsSync(path) ? readFile(path, 'utf8').catch(() => '') : '';
 }
 
-const STATIC_LANGUAGES = ['go', 'rust', 'swift', 'kotlin', 'java', 'csharp'];
-
 /**
  * The repo-wide guardrails that keep an agent from changing code wrong,
  * found from files alone. Each one turns a wrong edit into a failed check.
  */
-export async function detectGuardrails(
-  root: string,
-  files: string[],
-  stack: Stack,
-  testFiles: number,
-): Promise<Guardrail[]> {
+export async function detectGuardrails(root: string, files: string[], testFiles: number): Promise<Guardrail[]> {
   const has = (pattern: RegExp) => files.find((f) => pattern.test(f));
   const pyproject = await read(root, 'pyproject.toml');
   const pkg = await read(root, 'package.json');
-  const tsconfig = await read(root, 'tsconfig.json');
-  const main = stack.languages[0]?.name;
   const found = (name: string, evidence: string | undefined, why: string): Guardrail => ({
     name,
     present: Boolean(evidence),
     evidence: evidence ?? why,
   });
-  const strict =
-    (/"strict"\s*:\s*true/.test(tsconfig) && 'tsconfig.json: strict') ||
-    (/\[tool\.(mypy|pyright|ty)\]/.test(pyproject) && 'pyproject.toml: a type checker is configured') ||
-    has(/(^|\/)(mypy\.ini|pyrightconfig\.json)$/) ||
-    (main && STATIC_LANGUAGES.includes(main) ? `${main} is statically typed` : undefined);
+  const strict = await detectStrictTypes(root, files);
+  const hook = await describeCommitHook(root, files);
   return [
     found(
       'Agent guide',
       has(/^(AGENTS|CLAUDE)\.md$/),
       'No AGENTS.md or CLAUDE.md at the root: agents learn the rules by trial.',
     ),
-    found('Strict types', strict || undefined, 'No strict type check: a wrong type reaches run time.'),
+    { name: 'Strict types', ...strict },
     found(
       'Linter',
       has(
@@ -59,11 +48,7 @@ export async function detectGuardrails(
           : undefined),
       'Nothing stops a deep import across modules.',
     ),
-    found(
-      'Pre-commit hook',
-      has(/^(\.husky\/|\.pre-commit-config\.yaml$|lefthook\.ya?ml$|\.githooks\/)/),
-      'No hook: a broken change reaches a commit.',
-    ),
+    { name: 'Pre-commit hook', ...hook, informational: true },
     found('CI', has(/^(\.github\/workflows\/|\.gitlab-ci\.yml$|\.circleci\/)/), 'No CI config found.'),
     found('Tests', testFiles > 0 ? `${testFiles} test files` : undefined, 'No test files: nothing pins behaviour.'),
   ];

@@ -681,11 +681,14 @@ function renderScorecard() {
     q.coverage.share < 100
       ? `<div class="callout"><p>The scores cover ${q.coverage.share}% of the lines. Each cycle scores more files. Score more files now:</p>${commandBox('sloppatrol score --files 50')}</div>`
       : '';
+  // An informational guardrail neither passes nor fails, so it goes last, with no mark.
+  const rank = (g) => (g.informational ? 2 : Number(g.present));
   const guardrails = [...(current.guardrails ?? [])]
-    .sort((a, b) => Number(a.present) - Number(b.present))
-    .map(
-      (g) =>
-        `<li class="${g.present ? 'ok' : 'bad'}"><span class="mark" aria-hidden="true">${g.present ? '✓' : '✗'}</span><b>${esc(g.name)}</b><span class="muted">${g.present ? '' : 'Missing: '}${esc(g.evidence)}</span></li>`,
+    .sort((a, b) => rank(a) - rank(b))
+    .map((g) =>
+      g.informational
+        ? `<li class="info"><span class="mark" aria-hidden="true">·</span><b>${esc(g.name)}</b><span class="muted">${esc(g.evidence)}</span></li>`
+        : `<li class="${g.present ? 'ok' : 'bad'}"><span class="mark" aria-hidden="true">${g.present ? '✓' : '✗'}</span><b>${esc(g.name)}</b><span class="muted">${g.present ? '' : 'Missing: '}${esc(g.evidence)}</span></li>`,
     )
     .join('');
   const units = current.units;

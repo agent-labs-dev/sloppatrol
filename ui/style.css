@@ -1129,6 +1129,10 @@ button.agent:hover {
   color: var(--bad);
 }
 
+.guardrails .info .mark {
+  color: var(--muted);
+}
+
 .guardrails .muted {
   font-size: 12px;
   overflow-wrap: anywhere;
