@@ -7,7 +7,7 @@ import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
 import { cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
-import { fixtureRepo, gitIn, script } from './fixture.js';
+import { agentCommand, fixtureRepo, gitIn, read, script, scriptQueue } from './fixture.js';
 
 const SIMPLIFY = {
   kind: 'simplify',
@@ -392,5 +392,99 @@ test('an empty cart totals zero', () => {
     expect(second.coverage.lines).toBe(second.coverage.totalLines);
     // src/price.js (13 lines) scores 1 and test/price.test.js (14 lines) scores 4: (13 + 56) / 27.
     expect(second.means.clarity).toBe(2.56);
+  });
+
+  it('runs the configured cleanup before the gate, so residue an edit leaves does not fail a check', async () => {
+    const { repo, deps } = await setUp();
+    writeFileSync(
+      join(repo, 'lint.js'),
+      "import { readFileSync } from 'node:fs';\nconst text = readFileSync('src/price.js', 'utf8');\nif (text.includes('LEFTOVER')) {\n  console.error('LEFTOVER import left behind.');\n  process.exit(1);\n}\n",
+    );
+    writeFileSync(
+      join(repo, 'tidy.js'),
+      "import { readFileSync, writeFileSync } from 'node:fs';\nconst text = readFileSync('src/price.js', 'utf8');\nwriteFileSync('src/price.js', text.replace(/^.*LEFTOVER.*\\n/gm, ''));\n",
+    );
+    const config = `project: { name: shop }
+checks:
+  - name: lint
+    run: node lint.js
+  - name: test
+    run: node --test
+    tests: true
+cleanup:
+  - node tidy.js
+agents:
+  surveyor: { use: ${agentCommand('surveyor')}, timeoutMinutes: 2 }
+  refactorer: { use: ${agentCommand('refactorer')}, timeoutMinutes: 2 }
+  assessor: { use: ${agentCommand('assessor')}, timeoutMinutes: 2 }
+  reviewer: { use: ${agentCommand('reviewer')}, timeoutMinutes: 2 }
+github: { enabled: true }
+patrol: { pull: main }
+`;
+    writeFileSync(join(repo, '.sloppatrol/sloppatrol.yml'), config);
+    gitIn(repo, 'add', '-A');
+    gitIn(repo, 'commit', '-q', '-m', 'lint and tidy');
+    const loaded = await loadConfig(repo);
+    await deps.store.saveOpportunity(opportunity());
+    script('refactorer', [
+      { edit: { file: 'src/price.js', from: LOOP, to: `${REDUCE}  // LEFTOVER\n` } },
+      { tool: 'finish', input: { summary: 'total() uses reduce.' } },
+    ]);
+    script('assessor', reduceIsBetter);
+    script('reviewer', approve);
+
+    const refactor = await refactorNow(loaded, deps);
+
+    expect(refactor.status).toBe('verified');
+    expect(refactor.verdict?.checks.map((c) => [c.name, c.ok])).toEqual([
+      ['lint', true],
+      ['test', true],
+    ]);
+    expect(gitIn(refactor.worktree ?? loaded.source, 'log', '--oneline', '-1')).toContain('reduce');
+  });
+
+  it('finishes a change whose session ran out of time in a completion pass, then gates it', async () => {
+    const { repo, deps } = await setUp();
+    writeFileSync(
+      join(repo, 'lint.js'),
+      "import { readFileSync } from 'node:fs';\nconst text = readFileSync('src/price.js', 'utf8');\nif (text.includes('unused')) {\n  console.error('unused binding left behind.');\n  process.exit(1);\n}\n",
+    );
+    const config = `project: { name: shop }
+checks:
+  - name: lint
+    run: node lint.js
+  - name: test
+    run: node --test
+    tests: true
+agents:
+  surveyor: { use: ${agentCommand('surveyor')}, timeoutMinutes: 2 }
+  refactorer: { use: ${agentCommand('refactorer')}, timeoutMinutes: 0.05, cleanupTimeoutMinutes: 2, cleanupMaxSteps: 10 }
+  assessor: { use: ${agentCommand('assessor')}, timeoutMinutes: 2 }
+  reviewer: { use: ${agentCommand('reviewer')}, timeoutMinutes: 2 }
+github: { enabled: true }
+patrol: { pull: main }
+`;
+    writeFileSync(join(repo, '.sloppatrol/sloppatrol.yml'), config);
+    gitIn(repo, 'add', '-A');
+    gitIn(repo, 'commit', '-q', '-m', 'lint');
+    const loaded = await loadConfig(repo);
+    await deps.store.saveOpportunity(opportunity());
+    // Session one makes a half-finished change and hangs until its timeout.
+    // Session two, the completion pass, reads the steps that are left.
+    scriptQueue('refactorer', [
+      { edit: { file: 'src/price.js', from: LOOP, to: `${REDUCE}  const unused = 0;\n` } },
+      { hang: 30_000 },
+      { edit: { file: 'src/price.js', from: '  const unused = 0;\n', to: '' } },
+      { tool: 'run_checks' },
+      { tool: 'finish', input: { summary: 'total() uses reduce.' } },
+    ]);
+    script('assessor', reduceIsBetter);
+    script('reviewer', approve);
+
+    const refactor = await refactorNow(loaded, deps);
+
+    expect(refactor.timedOut).toBe(true);
+    expect(refactor.status).toBe('verified');
+    expect(read(refactor.worktree!, 'src/price.js')).toContain('items.reduce(');
   });
 });

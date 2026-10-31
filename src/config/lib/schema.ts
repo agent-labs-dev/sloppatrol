@@ -51,6 +51,14 @@ export const configSchema = z.object({
   /** Runs once in each fresh checkout or worktree, before the checks: install, codegen. */
   prepare: z.array(z.string()).default([]),
   /**
+   * Mechanical tidy-up commands run in the refactorer's worktree after its
+   * session and before the gate: remove the imports and helpers an edit left
+   * unused, format, sort. They run on every attempt, so residue from a session
+   * that ran out of time never reaches a check. A failing command is logged
+   * and left to the checks: cleanup never decides the verdict.
+   */
+  cleanup: z.array(z.string()).default([]),
+  /**
    * The oracle. Each check must pass on the patrolled commit before
    * Sloppatrol starts work, and again on every refactor.
    */
@@ -91,6 +99,14 @@ export const configSchema = z.object({
           maxPerCycle: z.number().int().positive().default(1),
           /** Attempts per opportunity before it is exhausted. */
           maxAttempts: z.number().int().positive().default(2),
+          /**
+           * A session that stops at its timeout hands its worktree to one
+           * bounded completion session, which finishes the change and tidies
+           * what it left unused instead of letting the gate reject a
+           * half-finished edit. These are that session's limits.
+           */
+          cleanupTimeoutMinutes: z.number().positive().default(15),
+          cleanupMaxSteps: z.number().int().positive().default(30),
         })
         .default({}),
       /** Scores files against the metrics rubric, for the scorecard and for each refactor's proof. */

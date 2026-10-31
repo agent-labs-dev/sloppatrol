@@ -78,6 +78,19 @@ export function script(role: 'surveyor' | 'refactorer' | 'assessor' | 'reviewer'
   process.env[`FAKE_AGENT_${role.toUpperCase()}`] = JSON.stringify(steps);
 }
 
+/** A queue a role's session consumes step by step, so a second session resumes where the first stopped. */
+export function scriptQueue(role: 'refactorer', steps: unknown[]): string {
+  const file = join(tmpdir(), `sloppatrol-steps-${role}-${Math.random().toString(16).slice(2)}.json`);
+  writeFileSync(file, JSON.stringify(steps));
+  process.env[`FAKE_AGENT_${role.toUpperCase()}_QUEUE`] = file;
+  return file;
+}
+
+/** The fake CLI command for one role, for a config a test writes itself. */
+export function agentCommand(role: string): string {
+  return `{ runtime: cli, command: "node ${FAKE_AGENT} {mcp} ${role}" }`;
+}
+
 export function read(repo: string, path: string): string {
   return readFileSync(join(repo, path), 'utf8');
 }

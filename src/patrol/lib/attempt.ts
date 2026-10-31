@@ -1,5 +1,5 @@
 import { newId, type Opportunity, type Refactor, titleOf } from '../../domain/index.js';
-import { prepare } from '../../gate/index.js';
+import { cleanup, prepare } from '../../gate/index.js';
 import { addWorktree, git, removeWorktree, squashCommit } from '../../git/index.js';
 import { type RoleContext, refactor } from '../../roles/index.js';
 import { judge } from './judge.js';
@@ -51,13 +51,21 @@ export async function attempt(
     await prepare(config.prepare, worktree, log);
     const outcome = await refactor(ctx, { opportunity, worktree, baseSha, refactorId: id, branch });
     if (outcome.stop === 'error') return await save({ status: 'failed', reason: outcome.error });
+    // The deterministic tidy-up pass, before the gate looks at the change: a
+    // session that ran out of time must not fail a check on residue it can
+    // clear mechanically (an import its edit made unused).
+    await cleanup(config.cleanup, worktree, log);
     const summary = outcome.summary ?? '';
     const committed = await squashCommit(worktree, baseSha, [
       titleOf(opportunity),
       `${summary}\n\nMade by Sloppatrol. The proof is in the pull request.`.trim(),
     ]);
     if (!committed) return await save({ status: 'rejected', summary, reason: `No change. ${summary}`.trim() });
-    const head = await save({ summary, headSha: await git(worktree, ['rev-parse', 'HEAD']) });
+    const head = await save({
+      summary,
+      headSha: await git(worktree, ['rev-parse', 'HEAD']),
+      ...(outcome.timedOut ? { timedOut: true } : {}),
+    });
     return await save(
       await judge(ctx, { refactor: head, opportunity, mutation: outcome.mutation, baseDir: base.dir }, save),
     );
