@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import type { Guardrail } from '../../domain/index.js';
 import type { Stack } from './stack.js';
 
@@ -9,31 +9,14 @@ async function read(root: string, file: string): Promise<string> {
   return existsSync(path) ? readFile(path, 'utf8').catch(() => '') : '';
 }
 
-/** The compiler of each of these rejects a wrong type. */
-const STATIC_LANGUAGES = ['go', 'rust', 'swift', 'kotlin', 'java', 'csharp'];
+/** The compiler of each of these rejects a wrong type. JavaScript has no compiler check, so it is not here. */
+const STATIC_LANGUAGES = ['typescript', 'go', 'rust', 'swift', 'kotlin', 'java', 'csharp'];
 
 /** A language with this share of the code lines or more needs its own type check. */
 const MAIN_SHARE = 0.1;
 
-/** True when this tsconfig, or a local tsconfig that it extends, sets `strict`. */
-async function strictConfig(root: string, file: string, depth = 0): Promise<boolean> {
-  const text = await read(root, file);
-  if (/"strict"\s*:\s*true/.test(text)) return true;
-  const parent = /"extends"\s*:\s*"([^"]+)"/.exec(text)?.[1];
-  if (!parent || depth > 5) return false;
-  if (/strictest/.test(parent)) return true;
-  if (!parent.startsWith('.')) return false;
-  const path = join(dirname(file), parent);
-  return strictConfig(root, path.endsWith('.json') ? path : `${path}.json`, depth + 1);
-}
-
 /** Evidence that a check rejects a wrong type in each language, keyed by language. */
 async function typeChecks(root: string, files: string[]): Promise<Record<string, string | undefined>> {
-  const configs = files.filter((f) => /(^|\/)[tj]sconfig[^/]*\.json$/.test(f) && !f.includes('node_modules/'));
-  const strict: string[] = [];
-  for (const file of configs) if (await strictConfig(root, file)) strict.push(file);
-  const checkJs: string[] = [];
-  for (const file of strict) if (/"checkJs"\s*:\s*true/.test(await read(root, file))) checkJs.push(file);
   let python: string | undefined = files.find((f) => /(^|\/)(mypy\.ini|pyrightconfig\.json)$/.test(f));
   for (const file of files.filter((f) => /(^|\/)(pyproject\.toml|setup\.cfg)$/.test(f))) {
     if (python) break;
@@ -41,8 +24,6 @@ async function typeChecks(root: string, files: string[]): Promise<Record<string,
       python = `${file}: a type checker is configured`;
   }
   return {
-    typescript: strict[0] && `${strict[0]}: strict`,
-    javascript: checkJs[0] && `${checkJs[0]}: strict, checkJs`,
     python,
     ...Object.fromEntries(STATIC_LANGUAGES.map((name) => [name, `${name}: the compiler checks types`])),
   };
@@ -50,7 +31,7 @@ async function typeChecks(root: string, files: string[]): Promise<Record<string,
 
 /**
  * Strict types are present when each main language of the repo has a type check.
- * A repo can mix languages, such as a Rust server with a TypeScript UI.
+ * A repo can mix languages, such as a Rust server with a JavaScript UI.
  */
 async function strictTypes(root: string, files: string[], stack: Stack): Promise<Guardrail> {
   const total = stack.languages.reduce((sum, l) => sum + l.lines, 0);
