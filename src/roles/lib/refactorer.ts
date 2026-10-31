@@ -4,7 +4,7 @@ import type { Mutation, Opportunity } from '../../domain/index.js';
 import { git } from '../../git/index.js';
 import { changeTools } from './change-tools.js';
 import { type RoleContext, systemPrompt } from './context.js';
-import { REFACTORER, REFACTORER_TESTS } from './prompts.js';
+import { REFACTORER, REFACTORER_COMPLETE, REFACTORER_TESTS } from './prompts.js';
 
 export function opportunityMarkdown(opportunity: Opportunity): string {
   return [
@@ -21,7 +21,7 @@ export function opportunityMarkdown(opportunity: Opportunity): string {
 export async function refactor(
   ctx: RoleContext,
   input: { opportunity: Opportunity; worktree: string; baseSha: string; refactorId: string; branch: string },
-): Promise<RoleOutcome & { mutation?: Mutation }> {
+): Promise<RoleOutcome & { mutation?: Mutation; timedOut?: boolean }> {
   const { config } = ctx.loaded;
   const { opportunity, worktree, baseSha } = input;
   const change = changeTools(ctx, input);
@@ -39,18 +39,37 @@ export async function refactor(
     finishTool('Finish with the pull request summary, or with the reason you changed nothing.'),
   ];
   const role = opportunity.side === 'tests' ? `${REFACTORER}\n\n${REFACTORER_TESTS}` : REFACTORER;
-  const outcome = await runRole({
-    role: 'refactorer',
-    runtime: ctx.runtimeFor(resolveRuntime(config, 'refactorer')),
-    system: await systemPrompt(ctx, role, opportunity.files),
-    prompt: `Make this opportunity real.\n\n${opportunityMarkdown(opportunity)}`,
-    tools,
-    limits: config.agents.refactorer,
-    subject: `refactor:${input.refactorId}`,
-    workdir: worktree,
-    store: ctx.store,
-    log: ctx.log,
+  const system = await systemPrompt(ctx, role, opportunity.files);
+  const run = (prompt: string, limits: { maxSteps: number; timeoutMinutes: number }) =>
+    runRole({
+      role: 'refactorer',
+      runtime: ctx.runtimeFor(resolveRuntime(config, 'refactorer')),
+      system,
+      prompt,
+      tools,
+      limits,
+      subject: `refactor:${input.refactorId}`,
+      workdir: worktree,
+      store: ctx.store,
+      log: ctx.log,
+    });
+  const first = await run(`Make this opportunity real.\n\n${opportunityMarkdown(opportunity)}`, {
+    maxSteps: config.agents.refactorer.maxSteps,
+    timeoutMinutes: config.agents.refactorer.timeoutMinutes,
   });
+  let outcome = first;
+  const timedOut = first.stop === 'timeout';
+  if (timedOut) {
+    // The session ran out of time mid-edit. It hands its worktree to one bounded
+    // completion session, so a half-finished change or its leftover imports are
+    // finished instead of being committed and rejected by a check.
+    ctx.log(`[refactorer] timed out after ${config.agents.refactorer.timeoutMinutes} min; running a completion pass`);
+    await change.settle();
+    outcome = await run(`${REFACTORER_COMPLETE}\n\n${opportunityMarkdown(opportunity)}`, {
+      maxSteps: config.agents.refactorer.cleanupMaxSteps,
+      timeoutMinutes: config.agents.refactorer.cleanupTimeoutMinutes,
+    });
+  }
   await change.settle();
-  return { ...outcome, mutation: change.mutation() };
+  return { ...outcome, mutation: change.mutation(), timedOut };
 }

@@ -30,6 +30,21 @@ export async function prepare(commands: string[], dir: string, log?: (line: stri
   }
 }
 
+/**
+ * The repo's tidy-up commands, in the refactorer's worktree after its session:
+ * a deterministic pass that clears mechanical residue (an import the edit made
+ * unused, formatting) before the gate sees it. A failing command is logged and
+ * left to the checks, so cleanup can never change a verdict by itself.
+ */
+export async function cleanup(commands: string[], dir: string, log?: (line: string) => void): Promise<void> {
+  for (const [index, run] of commands.entries()) {
+    log?.(`cleanup-${index + 1}: ${run}`);
+    const result = await runCommand({ name: `cleanup-${index + 1}`, run, timeoutMinutes: 10 }, dir);
+    log?.(`cleanup-${index + 1}: ${result.ok ? 'ok' : 'failed'} in ${(result.durationMs / 1000).toFixed(1)}s`);
+    if (!result.ok) log?.(result.output);
+  }
+}
+
 /** The verdict as markdown, for a pull request or an agent. */
 export function verdictMarkdown(verdict: GateVerdict): string {
   const guards = verdict.guards.length

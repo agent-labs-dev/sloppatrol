@@ -12,11 +12,25 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const config = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-const steps = JSON.parse(process.env[`FAKE_AGENT_${process.argv[3].toUpperCase()}`] ?? '[]');
+const role = process.argv[3];
+const queue = process.env[`FAKE_AGENT_${role.toUpperCase()}_QUEUE`];
+const steps = queue
+  ? JSON.parse(readFileSync(queue, 'utf8'))
+  : JSON.parse(process.env[`FAKE_AGENT_${role.toUpperCase()}`] ?? '[]');
+/** A queued session consumes its steps, so a session after a timeout resumes the rest. */
+const persist = () => {
+  if (queue) writeFileSync(queue, JSON.stringify(steps));
+};
 const client = new Client({ name: 'fake-agent', version: '0.0.0' });
 await client.connect(new StreamableHTTPClientTransport(new URL(config.mcpServers.sloppatrol.url)));
 const log = [];
-for (const step of steps) {
+while (steps.length) {
+  const step = steps.shift();
+  persist();
+  if (step.hang) {
+    await new Promise((done) => setTimeout(done, step.hang));
+    continue;
+  }
   if (step.edit) {
     const text = readFileSync(step.edit.file, 'utf8');
     if (!text.includes(step.edit.from)) throw new Error(`fake agent: ${step.edit.from} not in ${step.edit.file}`);

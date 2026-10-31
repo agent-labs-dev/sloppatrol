@@ -12,3 +12,6 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Packed tarballs are build output; npm publish ships the package.
+*.tgz

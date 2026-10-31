@@ -27,6 +27,8 @@ export type Refactor = {
   diffStat?: { files: number; added: number; removed: number };
   prUrl?: string;
   reason?: string;
+  /** The refactorer session hit its timeout; a completion session took over its worktree. */
+  timedOut?: boolean;
   createdAt: string;
   updatedAt: string;
 };
