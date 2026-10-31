@@ -55,6 +55,37 @@ flowchart TB
 
 [How it works](docs/how-it-works.md) shows each step of the gate, and the proof on each pull request.
 
+## Score your codebase
+
+Sloppatrol can score your code without the patrol. It changes no code and runs none of your checks, so it works on any repo.
+
+<p align="center">
+  <img src="assets/scorecard.png" alt="The scorecard of a demo project: an overall score of 81 in a green ring, a bar for each of the seven metrics, the repo guardrails, and the command npx sloppatrol score." width="100%">
+</p>
+
+1. Log in to Claude Code, Codex or opencode. Sloppatrol uses the agent that you have.
+2. Go to the root of your repo, and create the config:
+
+   ```bash
+   npx sloppatrol init
+   ```
+
+3. Optional: add your generated code to `ignore` in `.sloppatrol/sloppatrol.yml`. A tool writes that code, so it must not change your score.
+
+   ```yaml
+   ignore: [src/generated/**]
+   ```
+
+4. Score each file:
+
+   ```bash
+   npx sloppatrol score
+   ```
+
+An assessor agent scores each file on the [seven metrics](docs/metrics.md), from 0 (worst) to 100 (best). Then Sloppatrol opens the scorecard in your browser. Click **Download PNG** or **Copy image**, and post it.
+
+Sloppatrol scores the last commit on `origin/main`, not your local changes. The first run can take some minutes on a large repo. Sloppatrol keeps each score, so the next run scores only the files that changed. `--files <n>` scores at most `n` files in one run.
+
 ## The dashboard
 
 `npx sloppatrol` serves a live dashboard on http://127.0.0.1:4322. The **Overview** tells you at a glance if the patrol is healthy: the checks on main, what waits for your decision, the code quality and its change, and the last cycle. Then it lists what needs attention, with the command to run next.

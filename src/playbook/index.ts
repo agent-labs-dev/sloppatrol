@@ -9,10 +9,10 @@ const PLAYBOOK = fileURLToPath(new URL('../../playbook/', import.meta.url));
 
 const CORE = ['principles', 'testing', 'smells', 'safety'];
 
-/** The stack pages that apply: the main language, and any other with 5% of the files or more. */
+/** The stack pages that apply: the main language, and any other with 5% of the lines or more. */
 function stackPages(stack: Stack): string[] {
-  const total = stack.languages.reduce((sum, l) => sum + l.files, 0) || 1;
-  const major = new Set(stack.languages.filter((l, i) => i === 0 || l.files / total >= 0.05).map((l) => l.name));
+  const total = stack.languages.reduce((sum, l) => sum + l.lines, 0) || 1;
+  const major = new Set(stack.languages.filter((l, i) => i === 0 || l.lines / total >= 0.05).map((l) => l.name));
   const pages = new Set<string>();
   const js = major.has('typescript') || major.has('javascript');
   if (js) pages.add('typescript');

@@ -158,10 +158,9 @@ function means(list: UnitScores[]): Scorecard['means'] {
 
 const GUARDRAILS: Scorecard['guardrails'] = [
   { name: 'Agent guide', present: true, evidence: 'AGENTS.md' },
-  { name: 'Strict types', present: true, evidence: 'tsconfig.json: strict' },
+  { name: 'Strict types', present: true, evidence: 'typescript: the compiler checks types' },
   { name: 'Linter', present: true, evidence: 'biome.json' },
   { name: 'Module boundaries', present: false, evidence: 'Nothing stops a deep import across modules.' },
-  { name: 'Pre-commit hook', present: false, evidence: 'No hook: a broken change reaches a commit.' },
   { name: 'CI', present: true, evidence: '.github/workflows/ci.yml' },
   { name: 'Tests', present: true, evidence: '41 test files' },
 ];

@@ -1340,3 +1340,70 @@ pre.output {
     flex-wrap: wrap;
   }
 }
+
+/* ---------- share ---------- */
+
+.page-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.share-link {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  font-weight: 600;
+}
+
+.share-link:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+/* The card page has no top bar: only the card and its actions. */
+body.sharing {
+  background: #05070f;
+  color: #e2e8f0;
+}
+
+body.sharing .top {
+  display: none;
+}
+
+.share {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.share-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.share-bar .muted {
+  color: #94a3b8;
+}
+
+.share-back {
+  color: #67e8f9;
+}
+
+.share-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.share-card svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
+}

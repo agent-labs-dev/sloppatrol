@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 
 export type Stack = {
-  /** Languages by file count, most first. */
-  languages: { name: string; files: number }[];
+  /** Languages by line count, most first. Many small files, such as configs, do not make a main language. */
+  languages: { name: string; files: number; lines: number }[];
   frameworks: string[];
   /** What the project is: it decides which playbook pages apply. */
   kinds: ('client' | 'backend' | 'cli' | 'library')[];
@@ -59,12 +59,16 @@ async function nodeDependencies(root: string, files: string[]): Promise<{ deps: 
 }
 
 export async function detectStack(root: string, files: string[]): Promise<Stack> {
-  const counts = new Map<string, number>();
+  const counts = new Map<string, { name: string; files: number; lines: number }>();
   for (const file of files) {
-    const language = languageOf(file);
-    if (language) counts.set(language, (counts.get(language) ?? 0) + 1);
+    const name = languageOf(file);
+    if (!name) continue;
+    const count = counts.get(name) ?? { name, files: 0, lines: 0 };
+    count.files += 1;
+    count.lines += (await read(root, file).catch(() => '')).split('\n').length;
+    counts.set(name, count);
   }
-  const languages = [...counts].map(([name, n]) => ({ name, files: n })).sort((a, b) => b.files - a.files);
+  const languages = [...counts.values()].sort((a, b) => b.lines - a.lines);
   const { deps, bin } = await nodeDependencies(root, files);
   const python = (await Promise.all(['pyproject.toml', 'requirements.txt'].map((f) => read(root, f)))).join('\n');
   for (const name of ['django', 'fastapi', 'flask']) if (new RegExp(`\\b${name}\\b`, 'i').test(python)) deps.add(name);

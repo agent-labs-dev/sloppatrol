@@ -33,12 +33,10 @@ describe('the guardrails of a repo', () => {
   it('are found from the files that set them up', async () => {
     const dir = repo({
       'AGENTS.md': '# Rules',
-      'tsconfig.json': '{ "compilerOptions": { "strict": true } }',
       'biome.json': '{}',
       '.dependency-cruiser.cjs': 'module.exports = {}',
-      '.husky/pre-commit': 'pnpm test',
       '.github/workflows/ci.yml': 'on: push',
-      'src/a.ts': 'export const a = 1;',
+      'src/a.ts': 'export const a = 1;\n'.repeat(20),
       'src/a.test.ts': "it('a', () => {});",
     });
     expect(await present(dir)).toEqual({
@@ -46,10 +44,27 @@ describe('the guardrails of a repo', () => {
       'Strict types': true,
       Linter: true,
       'Module boundaries': true,
-      'Pre-commit hook': true,
       CI: true,
       Tests: true,
     });
+  });
+
+  it('need a type check for each main language of a mixed repo', async () => {
+    const server = { 'src/main.rs': 'fn main() {}\n'.repeat(80) };
+    const strictTypes = async (files: Record<string, string>, ignore: string[] = []) =>
+      (await takeCensus(repo(files), { ...scope, ignore })).guardrails.find((g) => g.name === 'Strict types');
+
+    expect(await strictTypes({ ...server, 'ui/app.ts': 'export const a = 1;\n'.repeat(20) })).toMatchObject({
+      present: true,
+      evidence: 'rust: the compiler checks types; typescript: the compiler checks types',
+    });
+    expect(await strictTypes({ ...server, 'ui/app.js': 'export const a = 1;\n'.repeat(20) })).toMatchObject({
+      present: false,
+      evidence: 'No strict type check for javascript: a wrong type reaches run time.',
+    });
+    expect(
+      (await strictTypes({ ...server, 'ui/api/gen.js': 'export const a = 1;\n'.repeat(20) }, ['ui/api/**']))?.present,
+    ).toBe(true);
   });
 
   it('are missing in a bare repo, with the reason', async () => {

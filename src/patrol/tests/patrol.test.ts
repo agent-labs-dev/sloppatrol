@@ -487,4 +487,42 @@ patrol: { pull: main }
     expect(refactor.status).toBe('verified');
     expect(read(refactor.worktree!, 'src/price.js')).toContain('items.reduce(');
   });
+
+  it('gives an assessor session no more files than its step budget can score', async () => {
+    const { repo, loaded, deps } = await setUp(false);
+    for (const name of ['tax', 'fee', 'tip'])
+      writeFileSync(join(repo, `src/${name}.js`), `export const ${name} = 1;\n`);
+    gitIn(repo, 'add', '-A');
+    gitIn(repo, 'commit', '-q', '-m', 'add small files');
+    // Five small files fit one batch of lines, but not one session of 7 tool calls.
+    writeFileSync(
+      join(loaded.dir, 'sloppatrol.yml'),
+      read(repo, '.sloppatrol/sloppatrol.yml').replace(
+        /(assessor: \{.*), timeoutMinutes: 2 \}/,
+        '$1, timeoutMinutes: 2, maxSteps: 7 }',
+      ),
+    );
+    script('assessor', [{ assess: [{ score: 3 }] }, { tool: 'finish', input: { summary: 'Scored.' } }]);
+
+    const scorecard = await scoreNow(await loadConfig(repo), deps);
+
+    expect(scorecard.coverage).toMatchObject({ files: 5, totalFiles: 5 });
+  });
+
+  it('scores every file by default, also while the checks fail on main', async () => {
+    const { repo, loaded, deps } = await setUp(false);
+    writeFileSync(join(repo, 'src/tax.js'), 'export const tax = (amount) => amount * 0.2;\n');
+    gitIn(repo, 'add', '-A');
+    gitIn(repo, 'commit', '-q', '-m', 'add a file');
+    writeFileSync(
+      join(loaded.dir, 'sloppatrol.yml'),
+      read(repo, '.sloppatrol/sloppatrol.yml').replace('node --test', 'exit 1'),
+    );
+    script('assessor', [{ assess: [{ score: 3 }] }, { tool: 'finish', input: { summary: 'Scored.' } }]);
+
+    const scorecard = await scoreNow(await loadConfig(repo), deps);
+
+    expect(scorecard.coverage).toMatchObject({ files: 3, totalFiles: 3 });
+    expect(await deps.store.listCheckRuns()).toEqual([]);
+  });
 });

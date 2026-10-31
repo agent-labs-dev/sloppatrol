@@ -3,7 +3,8 @@
 // runs, the backlog and the agent sessions. Read-only. The server computes
 // every number once (`state.summary`); the pages only show them.
 
-const TABS = ['overview', 'refactors', 'scorecard', 'checks', 'backlog', 'sessions'];
+/** The pages. `share` has no tab: it is the scorecard as a card to post. */
+const TABS = ['overview', 'refactors', 'scorecard', 'checks', 'backlog', 'sessions', 'share'];
 const ROLES = [
   ['patrol', 'Patrol'],
   ['surveyor', 'Surveyor'],
@@ -679,7 +680,7 @@ function renderScorecard() {
     .join('');
   const coverage =
     q.coverage.share < 100
-      ? `<div class="callout"><p>The scores cover ${q.coverage.share}% of the lines. Each cycle scores more files. Score more files now:</p>${commandBox('sloppatrol score --files 50')}</div>`
+      ? `<div class="callout"><p>The scores cover ${q.coverage.share}% of the lines. Each cycle scores more files. Score each file now:</p>${commandBox('sloppatrol score')}</div>`
       : '';
   const guardrails = [...(current.guardrails ?? [])]
     .sort((a, b) => Number(a.present) - Number(b.present))
@@ -723,7 +724,8 @@ function renderScorecard() {
         why: 'No scored file matches this filter. Select All to see each file.',
         compact: true,
       });
-  return `${numbers}
+  return `<div class="page-actions"><a class="share-link" href="#share">Share the scorecard</a></div>
+    ${numbers}
     <div class="metrics">${tiles}</div>
     ${coverage}
     <div class="grid two narrow-right">
@@ -755,6 +757,212 @@ function unitDetail(hash) {
           <p class="muted">Level ${Math.round(score.score)} of 4: ${esc(m.levels[Math.round(score.score)])}</p><p>${esc(score.evidence)}</p>`;
       })
       .join('')}`;
+}
+
+// ---------- share ----------
+// One SVG card, 1200 by 675 (the 16:9 of a post on X or LinkedIn), in the
+// colours of the banner. It is one image, so the browser saves it as a PNG.
+
+const CARD = { w: 1200, h: 675, pad: 64 };
+const CARD_FONT = "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif";
+const CARD_MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+const CARD_TONE = { low: '#f87171', mid: '#fbbf24', high: '#4ade80' };
+
+let measurer;
+/** The width of `text` in pixels, so the card can lay out a row of words. */
+function textWidth(text, font) {
+  measurer ??= document.createElement('canvas').getContext('2d');
+  measurer.font = font;
+  return measurer.measureText(text).width;
+}
+
+function clip(text, max) {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/** The logo's sparkle: a 7 by 7 pixel star, `size` pixels wide, at x, y. */
+function sparkle(x, y, size) {
+  const cells = [
+    [3, 0],
+    [3, 1],
+    [2, 2],
+    [3, 2],
+    [4, 2],
+    [0, 3],
+    [1, 3],
+    [2, 3],
+    [3, 3],
+    [4, 3],
+    [5, 3],
+    [6, 3],
+    [2, 4],
+    [3, 4],
+    [4, 4],
+    [3, 5],
+  ];
+  const step = size / 7;
+  return cells
+    .map(
+      ([cx, cy]) =>
+        `<rect x="${(x + cx * step).toFixed(1)}" y="${(y + cy * step).toFixed(1)}" width="${(step * 0.84).toFixed(1)}" height="${(step * 0.84).toFixed(1)}" rx="${(step * 0.14).toFixed(1)}" fill="url(#c-cyan)"/>`,
+    )
+    .join('');
+}
+
+/** The scorecard as an SVG card: the overall score, each metric, the guardrails, and the coverage. */
+function shareCard(q, current) {
+  const { w, h, pad } = CARD;
+  const right = w - pad;
+  const tone = (value) => CARD_TONE[band(value)];
+  const date = new Date(q.at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+  // The overall score: a ring, its share of a full turn coloured.
+  const ring = { x: 250, y: 362, r: 118 };
+  const turn = 2 * Math.PI * ring.r;
+  const overall = q.overall ?? 0;
+  const c = q.coverage;
+  const lines = current.coverage?.totalLines ?? 0;
+  const covered =
+    c.files < c.totalFiles
+      ? `Scored ${number(c.files)} of ${number(c.totalFiles)} files · ${c.share}% of the lines`
+      : `${plural(c.totalFiles, 'file')} · ${number(lines)} lines`;
+
+  // The metrics: one row each, name, bar, and score.
+  const top = 196;
+  const row = q.metrics.length > 6 ? 52 : 60;
+  const barX = 560;
+  const barW = right - barX;
+  const metrics = q.metrics
+    .map((m, i) => {
+      const y = top + i * row;
+      return `<text x="${barX}" y="${y}" font-size="19" fill="#e2e8f0">${esc(m.name)}</text>
+        <text x="${right}" y="${y}" font-size="22" font-weight="700" fill="${tone(m.value)}" text-anchor="end">${m.value}</text>
+        <rect x="${barX}" y="${y + 12}" width="${barW}" height="8" rx="4" fill="#ffffff" fill-opacity="0.08"/>
+        <rect x="${barX}" y="${y + 12}" width="${((barW * m.value) / 100).toFixed(1)}" height="8" rx="4" fill="${tone(m.value)}"/>`;
+    })
+    .join('');
+
+  // The footer: the guardrails as a row of marks, then the command to run.
+  const command = '$ npx sloppatrol score';
+  const commandFont = `16px ${CARD_MONO}`;
+  const pillW = textWidth(command, commandFont) + 36;
+  const footY = 622;
+  const label = 'GUARDRAILS';
+  // The label has a letter spacing of 2 that the canvas does not measure.
+  const start = pad + textWidth(label, `600 12px ${CARD_FONT}`) + 2 * label.length + 16;
+  const itemFont = `14px ${CARD_FONT}`;
+  let x = start;
+  const room = right - pillW - 24;
+  const items = [];
+  for (const g of [...(current.guardrails ?? [])].sort((a, b) => Number(b.present) - Number(a.present))) {
+    const text = `${g.present ? '✓' : '✗'} ${g.name}`;
+    const width = textWidth(text, itemFont);
+    if (x + width > room) break;
+    items.push(
+      `<text x="${x.toFixed(1)}" y="${footY}" font-size="14" fill="${g.present ? '#cbd5e1' : '#f87171'}">${esc(text)}</text>`,
+    );
+    x += width + 14;
+  }
+  const guardrails =
+    items.length === (current.guardrails ?? []).length
+      ? items.join('')
+      : `<text x="${start.toFixed(1)}" y="${footY}" font-size="14" fill="#cbd5e1">${q.guardrails.present} of ${q.guardrails.total} present</text>`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" font-family="${CARD_FONT}" role="img" aria-label="${esc(`The code quality scorecard of ${state.project}: ${overall} out of 100 overall.`)}">
+  <defs>
+    <linearGradient id="c-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#151a33"/><stop offset="1" stop-color="#070914"/></linearGradient>
+    <linearGradient id="c-cyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cffafe"/><stop offset="1" stop-color="#0891b2"/></linearGradient>
+    <radialGradient id="c-glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#22d3ee" stop-opacity="0.18"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+    <pattern id="c-grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.04"/></pattern>
+  </defs>
+  <rect width="${w}" height="${h}" fill="url(#c-bg)"/>
+  <rect width="${w}" height="${h}" fill="url(#c-grid)"/>
+  <circle cx="${ring.x}" cy="${ring.y}" r="240" fill="url(#c-glow)"/>
+
+  ${sparkle(pad, 42, 38)}
+  <text x="${pad + 50}" y="72" font-size="30" font-weight="800" letter-spacing="-0.5"><tspan fill="#f8fafc">slop</tspan><tspan fill="#67e8f9">patrol</tspan></text>
+  <text x="${right}" y="62" font-size="12" font-weight="600" letter-spacing="2" fill="#94a3b8" text-anchor="end">CODE QUALITY SCORECARD</text>
+  <text x="${right}" y="84" font-size="14" fill="#64748b" text-anchor="end">${esc(date)} · <tspan font-family="${CARD_MONO}">${esc(short(q.sha))}</tspan></text>
+
+  <text x="${pad}" y="150" font-size="40" font-weight="800" fill="#f8fafc" letter-spacing="-0.5">${esc(clip(state.project, 24))}</text>
+  <circle cx="${ring.x}" cy="${ring.y}" r="${ring.r}" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="18"/>
+  <circle cx="${ring.x}" cy="${ring.y}" r="${ring.r}" fill="none" stroke="${tone(overall)}" stroke-width="18" stroke-linecap="round" stroke-dasharray="${((turn * overall) / 100).toFixed(1)} ${turn.toFixed(1)}" transform="rotate(-90 ${ring.x} ${ring.y})"/>
+  <text x="${ring.x}" y="${ring.y + 26}" font-size="84" font-weight="800" fill="#f8fafc" text-anchor="middle" letter-spacing="-2">${q.overall ?? '–'}</text>
+  <text x="${ring.x}" y="${ring.y + 58}" font-size="13" font-weight="600" letter-spacing="2" fill="#94a3b8" text-anchor="middle">OVERALL · OF 100</text>
+  <text x="${ring.x}" y="${ring.y + ring.r + 58}" font-size="16" fill="#cbd5e1" text-anchor="middle">${esc(covered)}</text>
+
+  <text x="${barX}" y="150" font-size="12" font-weight="600" letter-spacing="2" fill="#94a3b8">EACH METRIC · 0 WORST TO 100 BEST</text>
+  ${metrics}
+
+  <line x1="${pad}" y1="572" x2="${right}" y2="572" stroke="#ffffff" stroke-opacity="0.08"/>
+  <text x="${pad}" y="${footY - 1}" font-size="12" font-weight="600" letter-spacing="2" fill="#94a3b8">${label}</text>
+  ${guardrails}
+  <rect x="${(right - pillW).toFixed(1)}" y="${footY - 27}" width="${pillW.toFixed(1)}" height="40" rx="10" fill="#0b1020" stroke="#22d3ee" stroke-opacity="0.45"/>
+  <text x="${(right - pillW + 18).toFixed(1)}" y="${footY}" font-size="16" font-family="${CARD_MONO}"><tspan fill="#67e8f9">$</tspan><tspan fill="#f8fafc">${esc(command.slice(1))}</tspan></text>
+</svg>`;
+}
+
+function renderShare() {
+  const q = state.summary.quality;
+  const current = state.scorecards.at(-1);
+  const back = '<a class="share-back" href="#scorecard">← The dashboard</a>';
+  if (!q || !current)
+    return `<div class="share">${back}<div class="card">${emptyState({
+      title: 'No scorecard yet',
+      why: 'The card shows the scores of each file. Score the code to make it.',
+      command: 'sloppatrol score',
+    })}</div></div>`;
+  const status =
+    q.coverage.files < q.coverage.totalFiles
+      ? `<span class="muted">The scores cover ${q.coverage.share}% of the lines. The card updates while files get scored.</span>`
+      : '';
+  return `<div class="share">
+    <div class="share-bar">${back}${status}<span class="share-actions">
+      <button type="button" class="copy" data-share="copy">Copy image</button>
+      <button type="button" class="copy" data-share="png">Download PNG</button>
+    </span></div>
+    <div class="share-card" id="share-card">${shareCard(q, current)}</div>
+  </div>`;
+}
+
+/** The card as a PNG, at twice its size, so it stays sharp on a phone. */
+function cardPng() {
+  const svg = $('share-card').querySelector('svg');
+  const image = new Image();
+  const loaded = new Promise((done, fail) => {
+    image.onload = done;
+    image.onerror = fail;
+  });
+  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`;
+  return loaded.then(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = CARD.w * 2;
+    canvas.height = CARD.h * 2;
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return new Promise((done) => canvas.toBlob(done, 'image/png'));
+  });
+}
+
+async function shareAction(button) {
+  const word = button.textContent;
+  try {
+    if (button.dataset.share === 'copy') {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': cardPng() })]);
+      button.textContent = 'Copied';
+    } else {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(await cardPng());
+      link.download = `sloppatrol-${state.project.replace(/[^\w.-]+/g, '-')}.png`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      button.textContent = 'Saved';
+    }
+  } catch {
+    button.textContent = 'Failed';
+  }
+  setTimeout(() => {
+    button.textContent = word;
+  }, 1500);
 }
 
 // ---------- checks ----------
@@ -1188,6 +1396,7 @@ const VIEWS = {
   checks: renderChecks,
   backlog: renderBacklog,
   sessions: renderSessions,
+  share: renderShare,
 };
 
 function render() {
@@ -1203,7 +1412,8 @@ function render() {
   // A refresh replaces the controls: give the focus back to the same one.
   const focused = document.activeElement;
   const key = ['select', 'filter', 'go', 'copy'].find((k) => focused?.dataset?.[k] !== undefined);
-  const name = document.querySelector(`.tabs a[data-tab="${current}"]`).textContent;
+  document.body.classList.toggle('sharing', current === 'share');
+  const name = document.querySelector(`.tabs a[data-tab="${current}"]`)?.textContent ?? 'Share the scorecard';
   setHtml($('view'), `<h1 class="sr-only">${name}</h1>${VIEWS[current]()}`);
   renderDetail();
   if (key && !document.body.contains(focused))
@@ -1240,8 +1450,11 @@ function closeDetail() {
 }
 
 document.addEventListener('click', async (event) => {
-  const target = event.target.closest('[data-select], [data-filter], [data-close], [data-go], [data-copy]');
+  const target = event.target.closest(
+    '[data-select], [data-filter], [data-close], [data-go], [data-copy], [data-share]',
+  );
   if (!target) return;
+  if (target.dataset.share) return shareAction(target);
   if (target.dataset.copy !== undefined) {
     try {
       await navigator.clipboard.writeText(target.dataset.copy);
