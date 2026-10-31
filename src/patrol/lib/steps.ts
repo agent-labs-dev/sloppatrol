@@ -3,13 +3,13 @@ import { type Opportunity, pickOpportunities, type Refactor, type Scorecard } fr
 import { listFiles } from '../../git/index.js';
 import { type SurveyResult, survey } from '../../roles/index.js';
 import { attempt } from './attempt.js';
-import { type Base, openBase, roleContext } from './base.js';
+import { type Base, checkoutBase, openBase, roleContext } from './base.js';
 import type { PatrolDeps } from './deps.js';
 import { exclusive } from './lock.js';
 import { retireInvalid } from './retire.js';
 import { scorecardFor } from './scorecard.js';
 
-/** One step of the cycle, run by hand. Each needs green checks on the base. */
+/** One step of the cycle, run by hand. The survey and a refactor need green checks on the base. */
 async function readyBase(loaded: LoadedConfig, deps: PatrolDeps): Promise<Base> {
   const base = await openBase(loaded, deps);
   if (base.blocked) throw new Error(base.blocked);
@@ -56,10 +56,17 @@ export function refactorNow(loaded: LoadedConfig, deps: PatrolDeps, id?: string)
   });
 }
 
-/** The scorecard of the patrolled commit now, with up to `budget` more files scored. */
-export function scoreNow(loaded: LoadedConfig, deps: PatrolDeps, budget?: number): Promise<Scorecard> {
+/**
+ * The scorecard of the patrolled commit now: every file scored, or up to
+ * `budget` more files. A score verifies nothing, so it needs no green checks.
+ */
+export function scoreNow(
+  loaded: LoadedConfig,
+  deps: PatrolDeps,
+  budget = Number.POSITIVE_INFINITY,
+): Promise<Scorecard> {
   return exclusive(loaded, deps, async () => {
-    const base = await readyBase(loaded, deps);
+    const base = await checkoutBase(loaded, deps);
     const { ctx, census } = await roleContext(loaded, deps, base);
     return scorecardFor(ctx, { dir: base.dir, sha: base.sha, census, budget });
   });

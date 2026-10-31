@@ -17,6 +17,8 @@ Each page starts with its numbers. Filters follow, then the details, with the pr
 | Backlog | The opportunities by status. The open ones show in the order the refactorer picks them, and the ones that wait for a refactor that changes the same files |
 | Sessions | Each agent session as a timeline of its tool calls, with its cost |
 
+The **share page** (`#share`) shows the scorecard as one card, 1200 by 675 pixels, for a post: the overall score, each metric, the guardrails, and how much of the repo the scores cover. It has no top bar, so a screenshot shows only the card. **Download PNG** saves the card at twice its size, and **Copy image** copies it. `sloppatrol score` opens this page, and the Scorecard page links to it.
+
 A page with no data says what it shows, why it is empty now, and the command to run next.
 
 The theme follows the system setting. The theme button in the top bar (a monitor, sun, or moon icon) changes it to Light, then Dark, then back to System. The browser keeps your choice.
