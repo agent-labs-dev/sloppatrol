@@ -29,10 +29,12 @@ export async function takeCensus(root: string, scope: CensusScope): Promise<Cens
     !matchesAny(path, scope.ignore) &&
     (scope.focus.length === 0 || matchesAny(path, scope.focus));
   const code = all.filter(inScope);
+  // Generated files can outnumber the real code, so they do not decide the main language.
+  const kept = all.filter((path) => !matchesAny(path, scope.ignore));
   const tests = code.filter((path) => matchesAny(path, scope.tests));
   const sources = code.filter((path) => !matchesAny(path, scope.tests));
   const [stack, measured, hot] = await Promise.all([
-    detectStack(root, all),
+    detectStack(root, kept),
     measureFiles(root, sources, tests),
     churn(root, inScope),
   ]);
@@ -53,7 +55,7 @@ export function censusMarkdown(census: Census): string {
   const list = <T>(items: T[], line: (item: T) => string) => (items.length ? items.map(line).join('\n') : '- none');
   return [
     '# Census',
-    `Languages: ${stack.languages.map((l) => `${l.name} (${l.files} files)`).join(', ') || 'none found'}`,
+    `Languages: ${stack.languages.map((l) => `${l.name} (${l.files} files, ${l.lines} lines)`).join(', ') || 'none found'}`,
     `Frameworks: ${stack.frameworks.join(', ') || 'none found'}`,
     `Project kind: ${stack.kinds.join(', ')}`,
     `Files: ${census.sourceFiles} source, ${census.testFiles} test`,

@@ -36,9 +36,8 @@ describe('the guardrails of a repo', () => {
       'tsconfig.json': '{ "compilerOptions": { "strict": true } }',
       'biome.json': '{}',
       '.dependency-cruiser.cjs': 'module.exports = {}',
-      '.husky/pre-commit': 'pnpm test',
       '.github/workflows/ci.yml': 'on: push',
-      'src/a.ts': 'export const a = 1;',
+      'src/a.ts': 'export const a = 1;\n'.repeat(20),
       'src/a.test.ts': "it('a', () => {});",
     });
     expect(await present(dir)).toEqual({
@@ -46,10 +45,41 @@ describe('the guardrails of a repo', () => {
       'Strict types': true,
       Linter: true,
       'Module boundaries': true,
-      'Pre-commit hook': true,
       CI: true,
       Tests: true,
     });
+  });
+
+  it('need a type check for each main language of a mixed repo', async () => {
+    const files = {
+      'Cargo.toml': '[package]',
+      'src/main.rs': 'fn main() {}',
+      'src/lib.rs': 'pub fn a() {}',
+      'ui/src/app.ts': 'export const a = 1;',
+      'ui/src/api/a.ts': 'export type A = 1;',
+      'ui/src/api/b.ts': 'export type B = 1;',
+      'ui/src/api/c.ts': 'export type C = 1;',
+    };
+    const loose = repo({ ...files, 'ui/tsconfig.json': '{ "compilerOptions": {} }' });
+    const strict = repo({
+      ...files,
+      'ui/tsconfig.json': '{ "extends": "../config/strict" }',
+      'config/strict.json': '{ "compilerOptions": { "strict": true } }',
+    });
+    const strictTypes = async (dir: string, ignore: string[] = []) =>
+      (await takeCensus(dir, { ...scope, ignore })).guardrails.find((g) => g.name === 'Strict types');
+
+    expect(await strictTypes(loose)).toMatchObject({
+      present: false,
+      evidence: 'No strict type check for typescript: a wrong type reaches run time.',
+    });
+    expect(await strictTypes(strict)).toMatchObject({
+      present: true,
+      evidence: 'ui/tsconfig.json: strict; rust: the compiler checks types',
+    });
+    expect((await strictTypes(strict, ['ui/src/api/**']))?.evidence).toBe(
+      'rust: the compiler checks types; ui/tsconfig.json: strict',
+    );
   });
 
   it('are missing in a bare repo, with the reason', async () => {
