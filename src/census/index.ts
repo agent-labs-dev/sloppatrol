@@ -36,7 +36,7 @@ export async function takeCensus(root: string, scope: CensusScope): Promise<Cens
     measureFiles(root, sources, tests),
     churn(root, inScope),
   ]);
-  const guardrails = await detectGuardrails(root, all, stack, tests.length);
+  const guardrails = await detectGuardrails(root, all, tests.length);
   return {
     stack,
     guardrails,
@@ -58,7 +58,7 @@ export function censusMarkdown(census: Census): string {
     `Project kind: ${stack.kinds.join(', ')}`,
     `Files: ${census.sourceFiles} source, ${census.testFiles} test`,
     '## Guardrails (what turns a wrong edit into a failed check)',
-    list(census.guardrails, (g) => `- ${g.present ? '✓' : '✗'} ${g.name}: ${g.evidence}`),
+    list(census.guardrails, (g) => `- ${g.informational ? '·' : g.present ? '✓' : '✗'} ${g.name}: ${g.evidence}`),
     '## Largest source files (lines)',
     list(census.largest, (f) => `- ${f.path}: ${f.lines}`),
     '## Tests that use a mocking library',

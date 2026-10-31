@@ -466,6 +466,7 @@ function qualityOf(scorecards: Scorecard[]) {
   const overallThen = overallPercent(pick(then));
   const c = current.coverage;
   const overall = overallPercent(current.means);
+  const scored = (current.guardrails ?? []).filter((g) => !g.informational);
   return {
     sha: current.sha,
     at: current.at,
@@ -491,8 +492,8 @@ function qualityOf(scorecards: Scorecard[]) {
       share: c.totalLines ? Math.round((c.lines / c.totalLines) * 100) : 0,
     },
     guardrails: {
-      present: (current.guardrails ?? []).filter((g) => g.present).length,
-      total: (current.guardrails ?? []).length,
+      present: scored.filter((g) => g.present).length,
+      total: scored.length,
     },
   };
 }

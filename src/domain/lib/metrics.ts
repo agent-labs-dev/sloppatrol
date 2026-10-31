@@ -48,8 +48,12 @@ export type UnitScores = {
   scores: Partial<Record<MetricId, MetricScore>>;
 };
 
-/** A repo-wide guardrail (agent guide, strict types, boundaries, ...), found from files. */
-export type Guardrail = { name: string; present: boolean; evidence: string };
+/**
+ * A repo-wide guardrail (agent guide, strict types, boundaries, ...), found from files.
+ * An `informational` one is shown with what was found but neither passes nor fails:
+ * whether it helps depends on more than the files can tell.
+ */
+export type Guardrail = { name: string; present: boolean; evidence: string; informational?: boolean };
 
 /** The repo's scores on one commit: every file with a valid score, and the mean per metric. */
 export type Scorecard = {
