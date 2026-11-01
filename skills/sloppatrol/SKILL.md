@@ -1,6 +1,6 @@
 ---
 name: sloppatrol
-description: Set up and run Sloppatrol, a team of AI agents that patrols a repo and makes the code cleaner with small, behaviour-preserving refactors (deep modules, separation of concerns, dependency injection, fakes instead of mocks), each verified by the repo's own checks before it becomes a draft pull request. Use when the user wants to add Sloppatrol to a repo, write or fix .sloppatrol/sloppatrol.yml, run a survey or a refactor, read the dashboard, or understand why a refactor was rejected.
+description: Set up and run Sloppatrol, a team of AI agents that patrols a repo and makes the code cleaner with small, behaviour-preserving refactors (deep modules, separation of concerns, dependency injection, fakes instead of mocks), each verified by the repo's own checks before it becomes a pull request. Use when the user wants to add Sloppatrol to a repo, write or fix .sloppatrol/sloppatrol.yml, run a survey or a refactor, read the dashboard, or understand why a refactor was rejected.
 ---
 
 # Sloppatrol

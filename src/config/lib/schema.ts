@@ -134,7 +134,7 @@ export const configSchema = z.object({
       enabled: z.boolean().default(false),
       repo: z.string().optional(),
       labels: z.array(z.string()).default(['sloppatrol']),
-      draft: z.boolean().default(true),
+      draft: z.boolean().default(false),
       /** Sloppatrol waits while this many of its pull requests are open. */
       maxOpen: z.number().int().positive().default(3),
     })
