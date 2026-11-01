@@ -20,9 +20,10 @@ const PRESETS: Record<CliAgent, { reader: string; editor: string }> = {
     editor: 'claude -p --output-format json --permission-mode auto --mcp-config {mcp} --allowedTools mcp__sloppatrol',
   },
   codex: {
-    reader: 'codex exec --json --skip-git-repo-check --sandbox read-only -c mcp_servers.sloppatrol.url={mcpUrl} -',
+    reader:
+      'codex exec --json --skip-git-repo-check --sandbox read-only -c mcp_servers.sloppatrol.url={mcpUrl} -c mcp_servers.sloppatrol.default_tools_approval_mode=approve -',
     editor:
-      'codex exec --json --skip-git-repo-check --sandbox workspace-write -c mcp_servers.sloppatrol.url={mcpUrl} -',
+      'codex exec --json --skip-git-repo-check --sandbox workspace-write -c mcp_servers.sloppatrol.url={mcpUrl} -c mcp_servers.sloppatrol.default_tools_approval_mode=approve -',
   },
   opencode: {
     reader: `OPENCODE_CONFIG_CONTENT='{"mcp":{"sloppatrol":{"type":"remote","url":"'{mcpUrl}'","oauth":false}},"permission":{"edit":"deny","bash":"deny"}}' opencode run --format json`,

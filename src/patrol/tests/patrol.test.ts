@@ -1,7 +1,7 @@
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createRuntime } from '../../agents/index.js';
+import { createRuntime, finishTool } from '../../agents/index.js';
 import { loadConfig } from '../../config/index.js';
 import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
@@ -79,6 +79,23 @@ describe('a patrol', () => {
     const deps: PatrolDeps = { store: new Store(loaded.dir), github: fake, runtimeFor: createRuntime, log: () => {} };
     return { repo, loaded, deps, github: fake };
   }
+
+  it('fails a CLI session that exits cleanly without finishing', async () => {
+    const { repo } = await setUp();
+    const runtime = createRuntime({ runtime: 'cli', command: 'true', label: 'scripted' });
+    const outcome = await runtime.run(
+      {
+        system: '',
+        prompt: '',
+        workdir: repo,
+        maxSteps: 2,
+        timeoutMs: 5000,
+        tools: [finishTool('Finish the session.')],
+      },
+      () => {},
+    );
+    expect(outcome).toMatchObject({ stop: 'error', finished: false });
+  });
 
   it('surveys, refactors, verifies and opens a pull request; a merge finishes the opportunity', async () => {
     const { loaded, deps, github } = await setUp();
