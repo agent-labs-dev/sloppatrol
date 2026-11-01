@@ -12,7 +12,7 @@ flowchart TB
   refactor --> gate["3 · Gate<br/>Code · guards, your checks, a planted bug"]
   gate --> assess["4 · Prove the gain<br/>LLM · 3 blind assessors score before and after"]
   assess --> review["5 · Review<br/>LLM · Reviewer, veto only"]
-  review --> publish["6 · Publish<br/>Code · a draft PR with its proof"]
+  review --> publish["6 · Publish<br/>Code · a PR with its proof"]
   publish --> wait["Wait for the next cycle"]
   wait -->|"next cycle"| pull
 

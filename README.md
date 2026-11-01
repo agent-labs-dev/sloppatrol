@@ -34,7 +34,7 @@ flowchart TB
   refactor --> gate["3 · Gate<br/>Code · guards, your checks, a planted bug"]
   gate --> assess["4 · Prove the gain<br/>LLM · 3 blind assessors score before and after"]
   assess --> review["5 · Review<br/>LLM · Reviewer, veto only"]
-  review --> publish["6 · Publish<br/>Code · a draft PR with its proof"]
+  review --> publish["6 · Publish<br/>Code · a PR with its proof"]
   publish --> wait["Wait for the next cycle"]
   wait -->|"next cycle"| pull
 
@@ -129,7 +129,7 @@ To set it up by hand, read [Getting started](docs/getting-started.md).
 | Languages | Any language with checks that you can run from a shell. The playbook has pages for TypeScript, React and React Native, Node backends, Python, Go, Swift, Kotlin and Rust. |
 | Agents | Claude Code, Codex or opencode, with your existing login (`agent: auto` picks the installed one). Or an API key for Anthropic, OpenAI, OpenRouter, or a custom endpoint. |
 | Repo rules | `AGENTS.md`, `CLAUDE.md` and their `@` imports, `CONTRIBUTING.md`, `GLOSSARY.md`, and your decision records |
-| GitHub | Draft pull requests through the `gh` CLI |
+| GitHub | Pull requests through the `gh` CLI |
 | Output | A local dashboard, GitHub pull requests, and JSON files under `.sloppatrol/runs/` |
 
 ## Documentation

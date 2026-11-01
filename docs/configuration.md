@@ -19,7 +19,7 @@ agents:
   surveyor: { minBacklog: 3, maxPerSurvey: 8 }
   refactorer: { maxPerCycle: 1, maxAttempts: 2, timeoutMinutes: 45, cleanupTimeoutMinutes: 15 }
   reviewer: { enabled: true }
-github: { enabled: true, draft: true, maxOpen: 3, labels: [sloppatrol] }
+github: { enabled: true, draft: false, maxOpen: 3, labels: [sloppatrol] }
 patrol: { intervalMinutes: 60, pull: origin/main }
 ```
 

@@ -37,6 +37,6 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
    npx sloppatrol publish
    ```
 
-   To let the patrol open draft pull requests by itself, set `github: { enabled: true }`.
+   To let the patrol open pull requests by itself, set `github: { enabled: true }`.
 
 The stronger your tests, the more Sloppatrol can do. Where code has no tests, it proposes characterization tests first. [How it works](how-it-works.md) tells why.
