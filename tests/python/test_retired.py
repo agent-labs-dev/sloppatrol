@@ -5,15 +5,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from conftest import SCRIPTS, git, write
+from conftest import SCRIPTS, commit, git, write
 
 from skills.sloppatrol.scripts import gate
-
-
-def commit(root: Path) -> str:
-    git(root, "add", "-A")
-    git(root, "commit", "-qm", "fixture", "--allow-empty")
-    return git(root, "rev-parse", "HEAD")
 
 
 def invoke(root: Path, *args: str) -> subprocess.CompletedProcess[str]:

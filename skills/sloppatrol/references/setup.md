@@ -12,8 +12,7 @@ sharper. Setup is **rerunnable**: a second run on an unchanged repository propos
 - [4. Write the project skill](#4-write-the-project-skill)
 - [5. Write AGENTS.md](#5-write-agentsmd)
 - [6. Project rules](#6-project-rules)
-- [7. Refresh vendored tools](#7-refresh-vendored-tools)
-- [8. Report](#8-report)
+- [7. Report](#7-report)
 
 ## 1. Inventory
 
@@ -188,7 +187,7 @@ is an index, and it is checked.
   for external citations and text/output fences. If a necessary form still produces a reproduced
   false positive, record the case and keep this check advisory for the affected project until
   fixed, as in step 3. Do not hide it or real failures behind a blanket existing configuration.
-- **Vendor the check** so it cannot go stale: `sloppatrol init` copies `scripts/agents.py` to `.sloppatrol/agents.py`. CI runs `python3 .sloppatrol/agents.py check`.
+- **Vendor the check** so it cannot go stale: `sloppatrol init` copies it to `.sloppatrol/agents.py`, and CI runs `python3 .sloppatrol/agents.py check`.
 
 ## 6. Project rules
 
@@ -197,16 +196,12 @@ runs them and starts the rule set.
 
 ### Vendor the gate
 
-Run `sloppatrol init` to vendor `scripts/gate.py` as `.sloppatrol/gate.py`. Never edit the copy: a change belongs
-in the installed skill, and `sloppatrol init --refresh` preserves local edits and reports any hash
-difference (step 7). The gate with no rules exits 0 and needs
-no ast-grep, so every repository gets it.
-
-The gate's `sloppatrol-retired-id` stage reports current tracked references to deleted rule and
-script ids, including references in configuration and prose.
-
-Copy the skill's `LICENSE` to `.sloppatrol/LICENSE` with it. Sloppatrol is MIT-licensed, so the
-licence text travels with the vendored copies.
+Run `sloppatrol init`. It vendors `gate.py`, `agents.py` and the scripts' `LICENSE` into
+`.sloppatrol/` and records their hashes in `.sloppatrol/SOURCE.md`. Never edit a copy: a change
+belongs in the installed skill. When a newer copy is available, `sloppatrol init --refresh` updates
+the copies, keeps one the repository edited and reports that its hash differs from `SOURCE.md`. The
+ledger is never vendored: the audit runs the skill's own `scripts/ledger.py`. The gate with no rules
+exits 0 and needs no ast-grep, so every repository gets it.
 
 When the first ast-grep rule is added, also write `.sloppatrol/sgconfig.yml`:
 
@@ -277,14 +272,6 @@ owned. Do not duplicate them as gate rules.
 - A class of problem that needs judgment specific to this codebase gets a project lens,
   `.sloppatrol/lenses/<id>.md`, in the same format as the built-in ones.
 
-## 7. Refresh vendored tools
-
-Run `sloppatrol init` to vendor `gate.py`, `agents.py` and `LICENSE` into `.sloppatrol/`, and
-write `.sloppatrol/SOURCE.md` with their hashes. Run `sloppatrol init --refresh` when a newer copy is
-available. A refresh keeps a repository-edited vendored file and reports that its hash differs from
-`SOURCE.md`. The ledger is never vendored: the audit runs the skill's own
-`scripts/ledger.py`.
-
-## 8. Report
+## 7. Report
 
 End with: the gap table before and after, every command you ran to verify, the files created or changed, the backlog you deliberately left, and the recommended next step, usually `sloppatrol audit`.
