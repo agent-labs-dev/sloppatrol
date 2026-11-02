@@ -89,6 +89,9 @@ rg -n '"exports"|"bin"|"main"|"types"|"scripts"|"sideEffects"' -g 'package.json'
 rg -n 'import\(|import.meta.glob|require\(|register|worker' src
 ```
 
+`--no-install` runs only what the project installs. Where it has no jscpd, use the
+[generic](generic.md) command, which fetches a pinned one.
+
 Knip's unused exports/files/dependencies are candidates relative to its discovered
 entries. Check framework plugin diagnostics and workspace boundaries before acting.
 Compare package exports with consumer-facing documentation. Clone reports identify

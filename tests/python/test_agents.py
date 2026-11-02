@@ -43,15 +43,6 @@ description: Skills for the example project.
 
 - **IGNORE-1** Not a requirement.
 """
-PACK_FILES = {
-    "SKILL.md": PACK.replace(
-        "Check error paths.", "Follow [voice](voice.md) and run `check_copy.py`."
-    ).encode(),
-    "voice.md": b"Use the [examples](references/copy%20examples.md).\n",
-    "check_copy.py": b"#!/usr/bin/env python3\nprint('Check copy')\n",
-    "references/copy examples.md": b"Write clear sentences.\n",
-    "assets/sample.bin": b"\x00\xff\r\n",
-}
 
 
 def check(tmp_path: Path, content: str = GOOD, *args: str) -> tuple[int, dict[str, Any]]:
