@@ -38,6 +38,7 @@
       "!**/dist",
       "!**/coverage",
       "!**/.pnpm-store",
+      "!**/.venv",
       "!**/*.tsbuildinfo",
       "!**/.sloppatrol/runs",
       "!**/*.md",
