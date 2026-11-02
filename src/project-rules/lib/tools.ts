@@ -17,11 +17,12 @@ const SOURCE = 'SOURCE.md';
 const run = promisify(execFile);
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');
 
+/** A SOURCE.md row; a Markdown formatter may pad the cells. */
+const ROW = /^\|[ \t]*`([^`]+)`[ \t]*\|[ \t]*`([0-9a-f]{64})`[ \t]*\|[ \t]*\r?$/gm;
+
 /** The hashes SOURCE.md recorded when each tool was last vendored. */
 function recorded(source: string): Map<string, string> {
-  return new Map(
-    [...source.matchAll(/^\| `([^`]+)` \| `([0-9a-f]{64})` \|\r?$/gm)].map((m) => [m[1] ?? '', m[2] ?? '']),
-  );
+  return new Map([...source.matchAll(ROW)].map((m) => [m[1] ?? '', m[2] ?? '']));
 }
 
 type Vendored = { written: string[]; edited: string[]; version: string };
