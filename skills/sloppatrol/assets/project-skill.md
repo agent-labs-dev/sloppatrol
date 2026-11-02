@@ -5,7 +5,7 @@ description: "Project skill for sloppatrol in <PROJECT>: the exact quality-gate 
 
 # sloppatrol project skill: <PROJECT>
 
-<!-- Written by `sloppatrol setup`. Keep it factual: every command here has been run and works.
+<!-- Written when you set up Sloppatrol. Keep it factual: every command here has been run and works.
      Update it whenever an audit learns something (a live root, a false-positive source). -->
 
 <One paragraph: what this project is, its runtime, and how it is consumed.>
