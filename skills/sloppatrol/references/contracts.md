@@ -486,9 +486,10 @@ writer controls:
   suffixes are stripped; URLs, anchors and absolute paths are skipped.
 - **Inline code** is a path when it contains `/` or ends in a known extension (`PATH_EXTENSIONS`).
   It is tried against the instruction directory, the root, and directories named earlier on the
-  same line; globs and `{a,b}` braces must match at least one file. Skipped: placeholders `<...>`,
-  brace lists with `...`, URLs, `-`/`~`/`$` prefixes, shell metacharacters, versions, `a.b.c`
-  identifiers, and a single-slash name with no known extension whose first part is not a directory.
+  same line. A glob must match at least one file, and every `{a,b}` alternative must resolve.
+  Skipped: placeholders `<...>`, brace lists with `...`, URLs, `-`/`~`/`$` prefixes, shell
+  metacharacters, versions, `a.b.c` identifiers, and a single-slash name with no known extension
+  whose first part is not a directory.
   In a linked worktree, an explicit `../` path may also resolve from the primary checkout.
 - **Not a claim.** A path after `no`, `no new`, or `never`, `do not` or `don't` followed by `add`,
   `create`, `introduce` or `use` is not checked. Nor is one prefixed by a repository introduced
