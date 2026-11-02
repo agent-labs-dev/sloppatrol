@@ -70,6 +70,8 @@ export type Opportunity = {
   /** The metrics this refactor must improve (`metrics.ts`). */
   metrics: MetricId[];
   strength: Strength;
+  /** The confirmed ledger findings this refactor resolves, by id. */
+  findings?: string[];
   status: OpportunityStatus;
   attempts: number;
   /** The commit the surveyor read. */
