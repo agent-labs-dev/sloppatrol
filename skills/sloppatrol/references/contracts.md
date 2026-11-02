@@ -120,7 +120,7 @@ An id is registered when it is one of:
 
 - an `id:` in `.sloppatrol/rules/*.yml`;
 - the stem of a file in `.sloppatrol/scripts/`;
-- a built-in lens (`playbook/lenses/<id>.md`; `gate.py` carries the list as `BUILTIN_LENSES`);
+- a built-in lens (`references/lenses/<id>.md`; `gate.py` carries the list as `BUILTIN_LENSES`);
 - the stem of a project lens, `.sloppatrol/lenses/<id>.md`.
 
 There is no other source. Ids match `[a-z0-9][a-z0-9-]*` and are unique across rules, scripts and

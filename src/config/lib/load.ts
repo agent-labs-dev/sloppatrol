@@ -56,6 +56,6 @@ export async function loadConfig(cwd: string): Promise<LoadedConfig> {
  */
 function withProjectRules(config: SloppatrolConfig, dir: string): SloppatrolConfig {
   if (!existsSync(join(dir, GATE)) || config.checks.some((c) => c.run.includes(`${CONFIG_DIR}/${GATE}`))) return config;
-  const run = `python3 "$(git rev-parse --show-toplevel)/${CONFIG_DIR}/${GATE}" --base ${JSON.stringify(config.patrol.pull)}`;
+  const run = `python3 "$(git rev-parse --show-toplevel)/${CONFIG_DIR}/${GATE}" --base '${config.patrol.pull.replaceAll("'", "'\\''")}'`;
   return { ...config, checks: [...config.checks, { name: 'project-rules', run, timeoutMinutes: 20, tests: false }] };
 }

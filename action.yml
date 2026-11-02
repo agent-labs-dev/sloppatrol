@@ -38,6 +38,10 @@ runs:
         BASE: ${{ inputs.base || format('origin/{0}', github.base_ref || github.event.repository.default_branch) }}
         GATE: ${{ inputs.gate }}
       run: |
+        if [ "$BASE" = origin/ ]; then
+          echo "::error title=No base branch::This event names no base branch: set the action's base input."
+          exit 2
+        fi
         if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
           echo "::error title=Shallow checkout::The gate compares with $BASE and needs full history: set fetch-depth: 0 on actions/checkout."
           exit 2

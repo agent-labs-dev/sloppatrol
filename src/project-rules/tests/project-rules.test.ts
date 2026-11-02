@@ -29,4 +29,12 @@ describe('the project-rules tools', () => {
     // The record still holds the shipped hash, so the edit stays visible on the next refresh.
     expect((await vendor(dir)).edited).toEqual(['gate.py']);
   });
+
+  it('keep a copy that has no record on every refresh', async () => {
+    const dir = temp();
+    writeFileSync(join(dir, 'gate.py'), '# copied by hand\n');
+    expect((await vendor(dir, ['gate.py'])).edited).toEqual(['gate.py']);
+    expect((await vendor(dir, ['gate.py'])).edited).toEqual(['gate.py']);
+    expect(readFileSync(join(dir, 'gate.py'), 'utf8')).toBe('# copied by hand\n');
+  });
 });

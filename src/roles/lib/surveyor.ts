@@ -87,7 +87,7 @@ export async function survey(
   const settings = config.agents.surveyor;
   const tracked = new Set(await listFiles(input.dir));
   const recorded: Opportunity[] = [];
-  const confirmed = new Map((await confirmedFindings(input.dir, CONFIG_DIR)).map((f) => [f.id, f]));
+  const confirmed = new Map((await confirmedFindings(input.dir)).map((f) => [f.id, f]));
 
   const record = async (raw: Record<string, unknown>): Promise<string> => {
     const proposal = readProposal(raw, config, tracked, confirmed);

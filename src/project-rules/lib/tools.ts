@@ -5,6 +5,7 @@ import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { CONFIG_DIR } from '../../config/index.js';
 
 /** The tools as the npm package ships them. */
 const SHIPPED = fileURLToPath(new URL('../../../skills/sloppatrol/scripts/', import.meta.url));
@@ -31,7 +32,8 @@ export function vendoredIn(dir: string): string[] {
 /**
  * Copies the named tools into `configDir` and records their hashes in
  * SOURCE.md. A copy whose hash no longer matches the record was edited in the
- * repo: it is kept, and reported, so a refresh never drops a local change.
+ * repo: it is kept, and reported, so a refresh never drops a local change. A
+ * kept copy with no record gets none, so it stays kept on every later refresh.
  */
 export async function vendor(configDir: string, names: readonly string[] = TOOLS): Promise<Vendored> {
   const { version } = JSON.parse(await readFile(PACKAGE, 'utf8')) as { version: string };
@@ -47,7 +49,8 @@ export async function vendor(configDir: string, names: readonly string[] = TOOLS
       const current = sha256(await readFile(target, 'utf8'));
       if (current !== sha256(shipped) && current !== before.get(name)) {
         edited.push(name);
-        rows.push(`| \`${name}\` | \`${before.get(name) ?? current}\` |`);
+        const kept = before.get(name);
+        if (kept) rows.push(`| \`${name}\` | \`${kept}\` |`);
         continue;
       }
     }
@@ -85,8 +88,8 @@ export async function ledger(root: string, ...args: string[]): Promise<string> {
 }
 
 /** The confirmed findings whose quote is still in the code at `root`; none when the repo has no ledger. */
-export async function confirmedFindings(root: string, configDir: string): Promise<Finding[]> {
-  if (!existsSync(join(root, configDir, 'ledger.json'))) return [];
+export async function confirmedFindings(root: string): Promise<Finding[]> {
+  if (!existsSync(join(root, CONFIG_DIR, 'ledger.json'))) return [];
   const items = JSON.parse(await ledger(root, 'list', '--status', 'confirmed', '--json')) as (Omit<Finding, 'line'> & {
     line: number | null;
   })[];

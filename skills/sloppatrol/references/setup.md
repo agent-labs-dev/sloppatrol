@@ -197,7 +197,7 @@ runs them and starts the rule set.
 
 ### Vendor the gate
 
-Copy `scripts/gate.py` byte for byte to `.sloppatrol/gate.py`. Never edit the copy: a change belongs
+Run `sloppatrol init` to vendor `scripts/gate.py` as `.sloppatrol/gate.py`. Never edit the copy: a change belongs
 in the installed skill, and `sloppatrol init --refresh` preserves local edits and reports any hash
 difference (step 7). The gate with no rules exits 0 and needs
 no ast-grep, so every repository gets it. A repository that is itself the source of `gate.py` still
