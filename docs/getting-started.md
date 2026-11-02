@@ -15,12 +15,12 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
      gate.py            # the project-rules gate: commit it
      agents.py          # the AGENTS.md check: commit it
      SOURCE.md          # the hashes of the vendored tools: commit it
-     ledger.json        # audit findings and their verdicts: git ignores it
+     ledger.json        # audit findings and their verdicts: an audit writes it, git ignores it
      runs/              # opportunities, refactors, check runs, scores, sessions: git ignores it
      reports/           # one report per audit: git ignores it
    ```
 
-   `init` also appends `runs/` and `reports/` to `.gitignore`.
+   `init` also appends `runs/`, `reports/` and `ledger.json` to `.gitignore`.
 
 2. Make `checks` the commands that prove behaviour in your repo: typecheck, lint, tests, build. Mark the test commands with `tests: true`. Put the install command in `prepare`. [Configuration](configuration.md) shows each setting.
 

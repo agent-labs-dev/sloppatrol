@@ -20,6 +20,8 @@ The audit is a route of the [Sloppatrol skill](../skills/sloppatrol/SKILL.md), r
 
 `sloppatrol init` vendors the tools, and `sloppatrol init --refresh` updates them. A refresh keeps a copy you edited and says so, because its hash no longer matches `SOURCE.md`.
 
+The ledger and the reports are local by default, so an audit PR carries no paperwork. A team that wants one shared ledger can track `.sloppatrol/ledger.json`.
+
 ## The gate in CI
 
 The gate is stdlib Python 3.10 or later. It needs ast-grep only when the repo has ast-grep rules.
