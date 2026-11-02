@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { copyFile, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -96,9 +96,21 @@ async function ledger(root: string, ...args: string[]): Promise<string> {
   return (await run('python3', [script, '--root', root, ...args], { maxBuffer: 64 * 1024 * 1024 })).stdout;
 }
 
-/** The confirmed findings whose quote is still in the code at `root`; none when the repo has no ledger. */
-export async function confirmedFindings(root: string): Promise<Finding[]> {
-  if (!existsSync(join(root, CONFIG_DIR, 'ledger.json'))) return [];
+/**
+ * The confirmed findings whose quote is still in the code at `root`, read from
+ * the ledger in `ledgerDir`; none when there is no ledger. The patrol surveys a
+ * detached checkout, which never inherits the git-ignored ledger that audits
+ * write beside the source checkout, so the ledger is copied in before it runs.
+ * Its quotes are still checked against the code at `root`.
+ */
+export async function confirmedFindings(root: string, ledgerDir = join(root, CONFIG_DIR)): Promise<Finding[]> {
+  const source = join(ledgerDir, 'ledger.json');
+  if (!existsSync(source)) return [];
+  const target = join(root, CONFIG_DIR, 'ledger.json');
+  if (source !== target) {
+    await mkdir(join(root, CONFIG_DIR), { recursive: true });
+    await copyFile(source, target);
+  }
   const items = JSON.parse(await ledger(root, 'list', '--status', 'confirmed', '--json')) as (Omit<Finding, 'line'> & {
     line: number | null;
   })[];
