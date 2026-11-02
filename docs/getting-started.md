@@ -15,7 +15,7 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
      gate.py            # the project-rules gate: commit it
      agents.py          # the AGENTS.md check: commit it
      SOURCE.md          # the hashes of the vendored tools: commit it
-     ledger.json        # audit findings and their verdicts: commit it
+     ledger.json        # audit findings and their verdicts: git ignores it
      runs/              # opportunities, refactors, check runs, scores, sessions: git ignores it
      reports/           # one report per audit: git ignores it
    ```

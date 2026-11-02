@@ -306,9 +306,8 @@ source, a convention), fix `AGENTS.md` where the audit proved it stale, and reru
 Use [the report template](../assets/report.md) and save it as `.sloppatrol/reports/<YYYY-MM-DD>.md`, or
 `<YYYY-MM-DD>-<n>.md` with the next free `n` when that day already has one. Never overwrite a
 report: it is what the next audit reads. The report is local scratch and is never committed.
-Build the Confirmed table's Guard column from `ledger.py list --json`, never by hand. When the user
-asked for commits, commit the ledger (`.sloppatrol/ledger.json`): it is the memory the next audit
-starts from.
+Build the Confirmed table's Guard column from `ledger.py list --json`, never by hand. The ledger
+(`.sloppatrol/ledger.json`) is local memory and stays out of the change.
 
 **Gate loosening.** Before writing the report, list everything since the previous report's commit
 (step 0) that makes the gate easier to pass, whoever added it:

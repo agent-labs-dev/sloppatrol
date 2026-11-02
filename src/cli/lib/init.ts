@@ -70,7 +70,7 @@ export async function init(
   await writeFile(
     file,
     `# Sloppatrol: https://github.com/agent-labs-dev/sloppatrol
-# Commit .sloppatrol/: this file, instructions.md, the vendored tools and the ledger. runs/ and reports/ are local data.
+# Commit .sloppatrol/: this file, instructions.md and the vendored tools. runs/, reports/ and the ledger are local data.
 version: 1
 project: { name: ${name} }
 # The agent every role runs on. auto: the first of claude, codex, opencode on PATH.
@@ -109,7 +109,9 @@ patrol: { intervalMinutes: 60, pull: origin/main }
     );
   const gitignore = join(root, '.gitignore');
   const ignored = existsSync(gitignore) ? await readFile(gitignore, 'utf8') : '';
-  const local = ['.sloppatrol/runs/', '.sloppatrol/reports/'].filter((path) => !ignored.includes(path));
+  const local = ['.sloppatrol/runs/', '.sloppatrol/reports/', '.sloppatrol/ledger.json'].filter(
+    (path) => !ignored.includes(path),
+  );
   if (local.length)
     await appendFile(gitignore, `${ignored && !ignored.endsWith('\n') ? '\n' : ''}${local.join('\n')}\n`);
   await vendorTools(dir, false, log);

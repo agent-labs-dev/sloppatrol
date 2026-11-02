@@ -64,7 +64,8 @@ when there is none); human-doc readers, evidence sources and supported outputs; 
 risk order; **Settled** and **Anti-patterns**, both empty at setup.
 
 If the repository uses Claude Code, symlink `.claude/skills/sloppatrol-project` to the canonical
-copy. Add `.sloppatrol/runs/` and `.sloppatrol/reports/` to `.gitignore`: both are local scratch.
+copy. Add `.sloppatrol/runs/`, `.sloppatrol/reports/` and `.sloppatrol/ledger.json` to `.gitignore`: the
+ledger is the audit's local memory, and the other two are scratch.
 
 ## 5. Write AGENTS.md
 

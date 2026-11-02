@@ -66,7 +66,7 @@ changes when the quoted code does, and then it is a new finding.
 
 ## Ledger
 
-`.sloppatrol/ledger.json` is committed; it is the memory the next audit starts from.
+`.sloppatrol/ledger.json` is git-ignored; it is the memory the next audit starts from.
 
 ```json
 {"schema_version": 1, "items": [{"id": "3f9a1c0b2e", "lens": "dead-code", "file": "src/util.py",

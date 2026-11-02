@@ -14,8 +14,7 @@ The audit is a route of the [Sloppatrol skill](../skills/sloppatrol/SKILL.md), r
   sgconfig.yml  rules/  rule-tests/             ast-grep rules and their tests
   scripts/  script-tests/  lib/                 script rules and their tests
   lenses/                                       the repo's own lenses
-  ledger.json                                   every finding and its verdict
-  runs/  reports/                               local data, ignored by git
+  runs/  reports/  ledger.json                  local data, ignored by git
 .agents/skills/sloppatrol-project/SKILL.md      what the audit settled for this repo
 ```
 
