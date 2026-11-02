@@ -12,6 +12,8 @@ coverage/
 # Sloppatrol local data: checkouts, worktrees, agent sessions, check results.
 # The config and the instructions are committed.
 **/.sloppatrol/runs/
+**/.sloppatrol/reports/
+**/.sloppatrol/ledger.json
 
 .env
 .env.*

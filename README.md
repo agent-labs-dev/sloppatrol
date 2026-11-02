@@ -16,7 +16,7 @@ Sloppatrol is a team of agents that patrols your repo and makes the code cleaner
 - Three blind **assessor** agents score the code before and after, on seven quality metrics. The target metrics must go up.
 - A **reviewer** agent reads the change against your repo's rules. It can only reject.
 
-The same skill runs an **audit** of a path or a branch diff through the same lenses, keeps its findings in a committed ledger, and grows project rules that a stdlib Python gate enforces in CI, with no service and no API key. See [Project rules and the audit](docs/project-rules.md).
+The same skill runs an **audit** of a path or a branch diff through the same lenses, keeps its findings in a ledger the next run reads, and grows project rules that a stdlib Python gate enforces in CI, with no service and no API key. See [Project rules and the audit](docs/project-rules.md).
 
 It is the code-quality sibling of [Bugpatrol](https://github.com/agent-labs-dev/bugpatrol) and [Speedpatrol](https://github.com/agent-labs-dev/speedpatrol).
 

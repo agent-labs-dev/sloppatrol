@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { refresh, vendor } from '../../project-rules/index.js';
+import { confirmedFindings, refresh, vendor } from '../../project-rules/index.js';
 
 describe('the project-rules tools', () => {
   const dirs: string[] = [];
@@ -53,5 +53,46 @@ describe('the project-rules tools', () => {
     expect((await vendor(dir, ['gate.py'])).edited).toEqual(['gate.py']);
     expect((await vendor(dir, ['gate.py'])).edited).toEqual(['gate.py']);
     expect(readFileSync(join(dir, 'gate.py'), 'utf8')).toBe('# copied by hand\n');
+  });
+
+  it('read the ledger audits write, and resolve its quote in the patrolled checkout', async () => {
+    const source = temp();
+    const checkout = temp();
+    const lens = 'dead-code';
+    const file = 'src/util.py';
+    const quote = 'def used():';
+    const id = createHash('sha256').update([lens, file, quote].join('\0')).digest('hex').slice(0, 10);
+    mkdirSync(join(source, '.sloppatrol'), { recursive: true });
+    writeFileSync(
+      join(source, '.sloppatrol', 'ledger.json'),
+      JSON.stringify({
+        schema_version: 1,
+        items: [
+          {
+            id,
+            lens,
+            file,
+            quote,
+            what: 'used has no caller',
+            why: 'no reference in src, tests, scripts or CI',
+            confidence: 'high',
+            status: 'confirmed',
+            reason: '',
+            guard: 'lens-only: needs the caller search',
+            first_seen: '2026-11-02',
+            updated: '2026-11-02',
+          },
+        ],
+      }),
+    );
+    mkdirSync(join(checkout, 'src'), { recursive: true });
+    writeFileSync(join(checkout, file), `${quote}\n    pass\n`);
+    const ledger = join(source, '.sloppatrol', 'ledger.json');
+    expect(await confirmedFindings(checkout, ledger)).toMatchObject([{ id, file, line: 1 }]);
+    // The ledger is read where audits write it; the patrolled checkout stays untouched.
+    expect(existsSync(join(checkout, '.sloppatrol', 'ledger.json'))).toBe(false);
+    // The quote is gone in the patrolled commit, so the finding no longer applies there.
+    writeFileSync(join(checkout, file), 'def renamed():\n    pass\n');
+    expect(await confirmedFindings(checkout, ledger)).toEqual([]);
   });
 });

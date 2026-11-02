@@ -49,9 +49,6 @@ export class Store {
   saveRefactor(refactor: Refactor): Promise<void> {
     return writeJson(this.path('refactors', `${refactor.id}.json`), refactor);
   }
-  getRefactor(id: string): Promise<Refactor | undefined> {
-    return readJson(this.path('refactors', `${id}.json`));
-  }
   listRefactors(): Promise<Refactor[]> {
     return readJsonFolder(this.path('refactors'));
   }
@@ -87,9 +84,6 @@ export class Store {
 
   saveScorecard(scorecard: Scorecard): Promise<void> {
     return writeJson(this.path('scorecards', `${scorecard.sha}.json`), scorecard);
-  }
-  getScorecard(sha: string): Promise<Scorecard | undefined> {
-    return readJson(this.path('scorecards', `${sha}.json`));
   }
   /** Oldest first. */
   async listScorecards(): Promise<Scorecard[]> {

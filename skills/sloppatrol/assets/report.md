@@ -2,7 +2,7 @@
 
 Scope: <whole repo | path | diff vs base>.
 Gate before: <pass | fail | known red: ledger ids>. Gate after: <pass/fail>.
-Open work: <n branches, n PRs; hot files left unedited>. Previous report: <commit | none>.
+Open work: <n branches, n PRs; hot files left unedited>. Previous report: <sha | none>.
 
 ## Carried forward
 

@@ -24,7 +24,7 @@ import { type AssessedScores, type AssessUnit, assess, type RoleContext } from '
 export async function mutationProof(
   ctx: RoleContext,
   input: { dir: string; mutation: Mutation; sha: string; refactorId: string; branch: string },
-): Promise<{ caught: boolean; runId: string }> {
+): Promise<boolean> {
   const { config } = ctx.loaded;
   const file = join(input.dir, input.mutation.file);
   const original = await readFile(file, 'utf8');
@@ -41,7 +41,7 @@ export async function mutationProof(
       input.dir,
       ctx.log,
     );
-    return { caught: run.status === 'failed', runId: run.id };
+    return run.status === 'failed';
   } finally {
     await writeFile(file, original);
   }

@@ -17,7 +17,7 @@ export type AgentEvent = {
 };
 
 export type AgentStatus = {
-  role: AgentRole | 'gate' | 'patrol' | 'publisher';
+  role: AgentRole | 'gate' | 'patrol';
   state: 'idle' | 'running' | 'done' | 'failed';
   detail: string;
   sessionId?: string;

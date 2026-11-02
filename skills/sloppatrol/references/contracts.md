@@ -66,7 +66,7 @@ changes when the quoted code does, and then it is a new finding.
 
 ## Ledger
 
-`.sloppatrol/ledger.json` is committed; it is the memory the next audit starts from.
+`.sloppatrol/ledger.json` is git-ignored; it is the memory the next audit starts from.
 
 ```json
 {"schema_version": 1, "items": [{"id": "3f9a1c0b2e", "lens": "dead-code", "file": "src/util.py",
@@ -111,8 +111,10 @@ changes when the quoted code does, and then it is a new finding.
 | `guards` | re-resolves every stored `rule:<id>` and `settled:<name>` guard against the current rules and Anti-patterns entries; prints each that names nothing | 0; 1 if any is stale |
 | `rekey` | recomputes ids that no longer match their lens, file and quote (a refactor moved the file), keeping verdicts, reasons and guards; single-file ledgers only; refuses if two items would collide | 0; 2 on a collision |
 
-All commands take `--root` (default: the Git toplevel, else cwd). Usage, registry and ledger errors
-exit 2. Writes are atomic and sorted, so the file diffs cleanly.
+All commands take `--root` (default: the Git toplevel, else cwd) and `--ledger` (default:
+`<root>/.sloppatrol/ledger.json`; a separate file lets the patrol read the ledger audits write
+beside the source checkout while the quotes are checked against the patrolled checkout). Usage,
+registry and ledger errors exit 2. Writes are atomic and sorted, so the file diffs cleanly.
 
 ## Registered ids
 

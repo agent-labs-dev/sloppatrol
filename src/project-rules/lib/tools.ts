@@ -90,17 +90,31 @@ export type Finding = {
   what: string;
 };
 
-/** Runs the shipped ledger tool on the ledger at `root`. */
-async function ledger(root: string, ...args: string[]): Promise<string> {
+/** Runs the shipped ledger tool on the ledger at `ledgerPath`, resolving paths against `root`. */
+async function ledger(root: string, ledgerPath: string, ...args: string[]): Promise<string> {
   const script = join(SHIPPED, 'ledger.py');
-  return (await run('python3', [script, '--root', root, ...args], { maxBuffer: 64 * 1024 * 1024 })).stdout;
+  return (
+    await run('python3', [script, '--root', root, '--ledger', ledgerPath, ...args], {
+      maxBuffer: 64 * 1024 * 1024,
+    })
+  ).stdout;
 }
 
-/** The confirmed findings whose quote is still in the code at `root`; none when the repo has no ledger. */
-export async function confirmedFindings(root: string): Promise<Finding[]> {
-  if (!existsSync(join(root, CONFIG_DIR, 'ledger.json'))) return [];
-  const items = JSON.parse(await ledger(root, 'list', '--status', 'confirmed', '--json')) as (Omit<Finding, 'line'> & {
-    line: number | null;
-  })[];
+/**
+ * The confirmed findings whose quote is still in the code at `root`, read from
+ * the ledger at `ledgerPath`; none when there is no ledger. The patrol surveys a
+ * detached checkout, which never inherits the git-ignored ledger that audits
+ * write beside the source checkout, so the ledger is read where it lives and its
+ * quotes are checked against the patrolled checkout. Nothing is written into it.
+ */
+export async function confirmedFindings(
+  root: string,
+  ledgerPath = join(root, CONFIG_DIR, 'ledger.json'),
+): Promise<Finding[]> {
+  if (!existsSync(ledgerPath)) return [];
+  const items = JSON.parse(await ledger(root, ledgerPath, 'list', '--status', 'confirmed', '--json')) as (Omit<
+    Finding,
+    'line'
+  > & { line: number | null })[];
   return items.filter((item): item is Finding => item.line !== null);
 }

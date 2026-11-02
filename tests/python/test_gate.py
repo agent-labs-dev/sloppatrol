@@ -535,7 +535,7 @@ def test_all_without_rules_and_without_commit(repo: Path) -> None:
 )
 def test_base_traps(repo: Path, trap: str, monkeypatch: pytest.MonkeyPatch) -> None:
     rule(repo, scope="changed")
-    base = commit(repo)
+    commit(repo)
     ref = "HEAD"
     if trap == "missing-ref":
         ref = "missing"
@@ -554,7 +554,6 @@ def test_base_traps(repo: Path, trap: str, monkeypatch: pytest.MonkeyPatch) -> N
     data = report(repo, "--base", ref, code=2)
     assert codes(data) == {"sloppatrol-base"}
     assert "--base" in data["findings"][0]["message"] and "fetch-depth: 0" in data["findings"][0]["message"]
-    assert base
 
 
 def test_shallow_without_changed_rules_works(repo: Path) -> None:
@@ -751,8 +750,7 @@ if not Path("live.flag").exists():
         previous = subprocess.check_output(["git", "show", os.environ["SLOPPATROL_BASE"] + ":deleted.txt"])
         assert previous == b"BAD\\n"
 """
-    path = script(repo, body=body + SCRIPT.replace('name.endswith(".txt")', 'name.endswith((".txt", ".py"))'))
-    assert path.exists()
+    script(repo, body=body + SCRIPT.replace('name.endswith(".txt")', 'name.endswith((".txt", ".py"))'))
     write(repo, "live.flag", "")
     case = ".sloppatrol/script-tests/script-check/deletion/"
     write(repo, case + "base/deleted.txt", "BAD\n")
