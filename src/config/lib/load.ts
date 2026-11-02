@@ -51,8 +51,8 @@ export async function loadConfig(cwd: string): Promise<LoadedConfig> {
 /**
  * The repo's own rules gate (`.sloppatrol/gate.py`) is one more check, on the
  * base and on every refactor, unless a check already runs it. Its base is the
- * patrolled ref, so on the base commit it sees no change, and on a refactor it
- * sees exactly the refactor.
+ * patrolled ref, so a changed-scope rule sees no change on the base commit and
+ * exactly the refactor on a refactor; every other rule scans the whole tree.
  */
 function withProjectRules(config: SloppatrolConfig, dir: string): SloppatrolConfig {
   if (!existsSync(join(dir, GATE)) || config.checks.some((c) => c.run.includes(`${CONFIG_DIR}/${GATE}`))) return config;

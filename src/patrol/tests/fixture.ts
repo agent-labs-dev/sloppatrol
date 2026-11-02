@@ -52,7 +52,6 @@ export function fixtureRepo(github = true): string {
   writeFileSync(join(repo, 'src/price.js'), PRICE);
   writeFileSync(join(repo, 'test/price.test.js'), TEST);
   writeFileSync(join(repo, '.gitignore'), '.sloppatrol/runs/\n');
-  const agent = (role: string) => `{ runtime: cli, command: "node ${FAKE_AGENT} {mcp} ${role}" }`;
   writeFileSync(
     join(repo, '.sloppatrol/sloppatrol.yml'),
     `project: { name: shop }
@@ -61,10 +60,10 @@ checks:
     run: node --test
     tests: true
 agents:
-  surveyor: { use: ${agent('surveyor')}, timeoutMinutes: 2 }
-  refactorer: { use: ${agent('refactorer')}, timeoutMinutes: 2 }
-  assessor: { use: ${agent('assessor')}, timeoutMinutes: 2 }
-  reviewer: { use: ${agent('reviewer')}, timeoutMinutes: 2 }
+  surveyor: { use: ${agentCommand('surveyor')}, timeoutMinutes: 2 }
+  refactorer: { use: ${agentCommand('refactorer')}, timeoutMinutes: 2 }
+  assessor: { use: ${agentCommand('assessor')}, timeoutMinutes: 2 }
+  reviewer: { use: ${agentCommand('reviewer')}, timeoutMinutes: 2 }
 github: { enabled: ${github} }
 patrol: { pull: main }
 `,

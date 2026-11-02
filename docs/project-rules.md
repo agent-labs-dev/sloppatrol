@@ -34,7 +34,7 @@ The gate is stdlib Python 3.10 or later. It needs ast-grep only when the repo ha
 
 The action runs `python .sloppatrol/gate.py --base origin/<base branch>`, plus `.sloppatrol/agents.py check` when the repo vendors it, and annotates each finding on the pull request. A plain step that runs the same commands works as well.
 
-The gate checks what changed since the base: every rule, every `sloppatrol: <id> - <reason>` marker (a known id, a real reason, no unused marker), and that no deleted rule is still named in the tree. It exits 0 when clean, 1 on a finding, and 2 when it cannot run.
+The gate runs every rule over the whole tree, except a rule scoped `changed`, which counts hits only in files changed since the base. It also checks every `sloppatrol: <id> - <reason>` marker (a known id, a real reason, no unused marker), and that no deleted rule is still named in the tree. It exits 0 when clean, 1 on a finding, and 2 when it cannot run.
 
 ## How the patrol uses them
 

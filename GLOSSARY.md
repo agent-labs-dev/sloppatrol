@@ -5,7 +5,7 @@
 - **Side**: `source` or `tests`. A refactor changes one side only (ADR 0002).
 - **Refactor**: one attempt at one opportunity, in its own worktree and branch.
 - **Gate**: the code that decides whether a refactor is kept: the guards, then the checks (ADR 0001).
-- **Guard**: a rule on the diff: one side, frozen files, no suppression, tests kept, size. In the ledger, a guard is instead what stops a finding from coming back: a project rule, a settled entry in the project skill, or a lens.
+- **Guard**: a rule on the diff: one side, frozen files, no suppression, tests kept, size. In the ledger, a guard is instead what stops a finding from coming back: a project rule, a linter's rule, a named Anti-patterns entry in the project skill, or a reason only a lens can catch it.
 - **Check**: one of the repo's own commands (typecheck, lint, test, build). The checks are the oracle.
 - **Check run**: one run of the checks: on the patrolled commit (`base`), on a refactor (`gate`), or by the refactorer on its own change.
 - **Review**: the reviewer's verdict on a refactor that passed the gate. It can only reject.
