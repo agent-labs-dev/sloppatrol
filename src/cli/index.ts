@@ -95,7 +95,7 @@ async function main(args: string[]): Promise<number> {
     return EXIT.ok;
   }
   if (command === 'init') {
-    await init(cwd, strFlag(flags, 'agent') ?? 'auto', log);
+    await init(cwd, { agent: strFlag(flags, 'agent') ?? 'auto', refresh: flags.refresh === true }, log);
     return EXIT.ok;
   }
   const { loaded, deps } = await wire(cwd);
