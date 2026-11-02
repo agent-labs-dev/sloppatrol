@@ -42,6 +42,7 @@ jobs:
       - run: uv run --no-sync ruff check skills/sloppatrol/scripts tests/python
       - run: uv run --no-sync ruff format --check skills/sloppatrol/scripts tests/python
       - run: uv run --no-sync pytest tests/python -q
+      - run: python skills/sloppatrol/scripts/agents.py check
       # The gate on this repository itself, through the action users call.
       - uses: ./
         with:

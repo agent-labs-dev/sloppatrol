@@ -275,7 +275,7 @@ def test_json_suppression_text_fixes_and_summary(repo: Path) -> None:
     assert result.stderr.startswith(
         "sloppatrol gate 0.1.0: 1 findings, 1 suppressed, 1 rules (1 ast-grep, 0 script);"
     )
-    assert "; ast-grep 0.44.1; base not needed (merge-base -), 0 changed files; " in result.stderr
+    assert "; ast-grep 0.44.1; base not needed, every rule scans all files; " in result.stderr
     assert result.stderr.endswith(" s\n")
 
 

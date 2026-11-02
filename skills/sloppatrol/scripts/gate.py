@@ -840,8 +840,12 @@ def main() -> int:
     print(
         f"sloppatrol gate {VERSION}: {len(visible)} findings, {len(hits) - len(visible)} suppressed, "
         f"{len(rules)} rules ({ast_count} ast-grep, {len(rules) - ast_count} script); "
-        f"ast-grep {report['ast_grep'] or 'not needed'}; base {base['ref'] or 'not needed'} "
-        f"(merge-base {(base['merge_base'] or '-')[:12]}), {base['changed']} changed files; "
+        f"ast-grep {report['ast_grep'] or 'not needed'}; "
+        + (
+            f"base {base['ref']} (merge-base {(base['merge_base'] or '-')[:12]}), {base['changed']} changed files; "
+            if base["ref"]
+            else "base not needed, every rule scans all files; "
+        )
         + (f"--fast: {len(skipped)} scripts skipped; " if args.fast else "")
         + f"{time.monotonic() - started:.1f} s",
         file=sys.stderr,
