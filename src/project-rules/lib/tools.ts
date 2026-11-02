@@ -28,7 +28,7 @@ function recorded(source: string): Map<string, string> {
 type Vendored = { written: string[]; edited: string[]; version: string };
 
 /** The tools a folder vendors today. */
-export function vendoredIn(dir: string): string[] {
+function vendoredIn(dir: string): string[] {
   return TOOLS.filter((name) => existsSync(join(dir, name)));
 }
 
@@ -73,6 +73,12 @@ ${rows.join('\n')}
 `,
   );
   return { written, edited, version };
+}
+
+/** Updates the tools `configDir` vendors, or vendors them all when it has none yet. */
+export function refresh(configDir: string): Promise<Vendored> {
+  const present = vendoredIn(configDir);
+  return vendor(configDir, present.length ? present : TOOLS);
 }
 
 /** One confirmed item of the repository's findings ledger. */

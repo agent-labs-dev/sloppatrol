@@ -578,7 +578,9 @@ def main() -> int:
             print(message)
         return 0
     except (OSError, ValueError, RuntimeError) as error:
-        parser.error(str(error))
+        # A refused value, not a mistyped command: no usage line.
+        print(f"ledger.py: {error}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

@@ -82,7 +82,7 @@ All are single-file, standard-library Python 3.10+. Run the skill's scripts from
 root as `python3 <this skill's directory>/scripts/<name>.py`:
 
 - `.sloppatrol/gate.py` is the project's gate for its own rules, vendored by `sloppatrol init`. It runs the ast-grep and script rules with their tests and checks every `sloppatrol:` marker. Exit 2 means the gate itself cannot run: fix the gate, not the code.
-- `scripts/ledger.py` is the audit's memory and anchor: it proves a review's quotes exist and its files were read, and records candidates and verdicts in `.sloppatrol/ledger.json`, a single file.
+- `scripts/ledger.py` is the audit's memory and anchor: it proves a review's quotes exist and that it lists every file in its slice, and records candidates and verdicts in `.sloppatrol/ledger.json`, a single file.
 - `scripts/agents.py` checks that `AGENTS.md` is complete and not stale. Run `scripts/agents.py check`; it has no other audit subcommand.
 - `scripts/LICENSE` is the MIT licence of these scripts. `sloppatrol init` vendors it next to the copies; keep it with them.
 

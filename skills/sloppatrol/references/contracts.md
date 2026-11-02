@@ -408,7 +408,7 @@ problem needs judgment specific to this codebase (a domain invariant, a framewor
 ## Agent instructions
 
 `scripts/agents.py` is the reference implementation for this section. It is a Python 3.10+,
-stdlib-only helper (`VERSION = "0.7.0"`); it never executes documented commands or fetches external content.
+stdlib-only helper; it never executes documented commands or fetches external content.
 
 ```sh
 python3 skills/sloppatrol/scripts/agents.py check [--root DIR] [--json] [--max-lines N] [--max-skill-lines N]

@@ -43,14 +43,15 @@ always cover the whole repository: scripts, CI, docs, configuration and open wor
   heading gets it now, empty, as [the template](../assets/project-skill.md) writes it: the reviewer
   and verifier briefs pass both sections on.
 - **Human docs.** For human-facing documentation slices, load [docs.md](docs.md) and the project
-  profile's documentation evidence and outputs. Keep factual support, reader paths, delivery and
+  skill's **Human documentation** section. Keep factual support, reader paths, delivery and
   editorial findings separate.
 - **Ledger.** `python3 <skill>/scripts/ledger.py list`. Every `open`, `confirmed` or `unproven` item
   is re-checked this run and ends with a status: `unproven` means no one settled it, so it goes to a
   verifier again (step 5). Items shown `gone` had their code change: check the defect went with it
   and mark them `fixed`. A `confirmed` item reuses its stored guard; a gone `open` item has none, so
   choose one as in step 5, or mark it `dismissed` with a reason if the defect was never real.
-  `dismissed`, `decide` and `bug` items stay as they are until their code changes; the ledger gives
+  A gone `bug` item is marked `fixed` the same way.
+  `dismissed`, `decide` and live `bug` items stay as they are until their code changes; the ledger gives
   changed code a new id, so it comes back on its own.
 - **Base.** Fetch the default branch once (`git fetch origin <default>`) and record its SHA as `<base-sha>`. Every
   `--base`, merge-base and branch comparison in this run uses that SHA, never `origin/<default>`,
@@ -68,6 +69,8 @@ always cover the whole repository: scripts, CI, docs, configuration and open wor
   list is unknown. If `gh` is missing, fails, or the remote is not on GitHub, rely on the branch
   list and say so in the report's Open work line.
 
+  Leave out the branch being audited and its own PR: they are this run's scope, not open work.
+
   Files those branches touch are **hot**: findings in them are reported, not edited, unless the
   user says otherwise. A branch is not in flight when its work already landed or was superseded:
   `git cherry <base-sha> <branch>` prints no `+` line, or its PR is closed or merged (a squash merge
@@ -81,11 +84,11 @@ always cover the whole repository: scripts, CI, docs, configuration and open wor
 - **Previous report.** Record the commit that last touched `.sloppatrol/reports/`:
   `git log -1 --format=%H -- .sloppatrol/reports`. When the newest report there is uncommitted, use the
   commit its heading names (`@ <sha>`) instead. Section 8 measures gate loosening against it. With
-  no previous report, use the starting HEAD.
+  no previous report, use the merge-base with `<base-sha>`, so what this branch added is measured too.
 
 ## 1. Gate first
 
-Run the project's gate, as the project skill lists it. That includes `python3 .sloppatrol/gate.py` when
+Run the project's gate, as the project skill lists it, with `<base-sha>` in place of any `--base` it names. That includes `python3 .sloppatrol/gate.py` when
 the file exists (the project skill may prefix it, for example `uv run`). If the gate is already red,
 stop and report: an audit on a red tree cannot tell its own breakage from what was there. Offer to
 fix the gate as a separate change. A gate exit of 2 means the gate is misconfigured, not the code.
@@ -99,7 +102,7 @@ code: any new line is yours. The report lists the red lines and their ledger ids
 
 Run the evidence tools (project skill first, else `references/languages/<lang>.md`): dead-code
 detectors, clone detection, `python3 .sloppatrol/gate.py --all` (the full backlog of rules that normally
-check only changed files), and `agents.py check`. This is the half that does not hallucinate, and it
+check only changed files), and `agents.py check` (the project's vendored `.sloppatrol/agents.py` when it has one, else the skill's). This is the half that does not hallucinate, and it
 still only produces candidates: detectors miss dynamic dispatch and over-report framework
 entrypoints.
 
@@ -117,7 +120,8 @@ dismiss for its slice ("vulture: `parse_legacy` unused. Is it?"), never as findi
 Split the scope into slices of one subsystem each, sized so one reviewer can read every file in it
 in full. Order by risk, lowest first, unless the project skill says otherwise. Never review the
 whole tree in one pass, even without sub-agents: every slice and batch is its own pass with its own
-run file. Fixtures, generated and vendored code are not reviewed.
+run file. Fixtures, generated and vendored code are not reviewed, nor are the audit's own records: the ledger,
+`.sloppatrol/reports/`, `.sloppatrol/runs/` and `SOURCE.md`.
 
 For each slice, apply the lenses its files' zones call for, in three batches, one reviewer each:
 
@@ -302,7 +306,7 @@ source, a convention), fix `AGENTS.md` where the audit proved it stale, and reru
 Use [the report template](../assets/report.md) and save it as `.sloppatrol/reports/<YYYY-MM-DD>.md`, or
 `<YYYY-MM-DD>-<n>.md` with the next free `n` when that day already has one. Never overwrite a
 report: it is what the next audit reads.
-Build the Confirmed table's Guard column from `ledger.py list --json`, never by hand. Commit the
+Build the Confirmed table's Guard column from `ledger.py list --json`, never by hand. When the user asked for commits, commit the
 report with the ledger (`.sloppatrol/ledger.json`): the ledger is the
 memory the next audit starts from.
 

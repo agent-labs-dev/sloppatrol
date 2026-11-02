@@ -200,8 +200,7 @@ runs them and starts the rule set.
 Run `sloppatrol init` to vendor `scripts/gate.py` as `.sloppatrol/gate.py`. Never edit the copy: a change belongs
 in the installed skill, and `sloppatrol init --refresh` preserves local edits and reports any hash
 difference (step 7). The gate with no rules exits 0 and needs
-no ast-grep, so every repository gets it. A repository that is itself the source of `gate.py` still
-vendors a copy, and a test compares the two byte for byte so they cannot drift.
+no ast-grep, so every repository gets it.
 
 The gate's `sloppatrol-retired-id` stage reports current tracked references to deleted rule and
 script ids, including references in configuration and prose.

@@ -4,7 +4,7 @@ You are a verifier. A reviewer believes the finding below is a real defect. Your
 prove it **wrong**. Most review false positives come from not searching hard enough, so search.
 
 You get: the finding (lens, file, quoted code, what, why), the whole file, the lens definition, the
-project skill's **Live roots**, **Settled** and **Model-read text** sections, the refs of the
+project skill's **Live roots**, **Settled**, **Anti-patterns** and **Model-read text** sections, the refs of the
 branches in flight (search each with `git grep -n <name> <ref>`), and the hot files that open work
 touches.
 

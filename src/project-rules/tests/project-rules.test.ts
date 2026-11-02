@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { vendor, vendoredIn } from '../../project-rules/index.js';
+import { refresh, vendor } from '../../project-rules/index.js';
 
 describe('the project-rules tools', () => {
   const dirs: string[] = [];
@@ -22,13 +22,17 @@ describe('the project-rules tools', () => {
     expect(readFileSync(join(dir, 'SOURCE.md'), 'utf8')).toMatch(/\| `gate.py` \| `[0-9a-f]{64}` \|/);
     writeFileSync(join(dir, 'gate.py'), '# changed here\n');
     rmSync(join(dir, 'agents.py'));
-    const refreshed = await vendor(dir, vendoredIn(dir));
+    const refreshed = await refresh(dir);
     expect(refreshed.edited).toEqual(['gate.py']);
     // A refresh updates only what the repo vendors.
     expect(refreshed.written).toEqual(['LICENSE']);
     expect(readFileSync(join(dir, 'gate.py'), 'utf8')).toBe('# changed here\n');
     // The record still holds the shipped hash, so the edit stays visible on the next refresh.
     expect((await vendor(dir)).edited).toEqual(['gate.py']);
+  });
+
+  it('vendor every tool on a refresh when none is vendored yet', async () => {
+    expect((await refresh(temp())).written).toEqual(['gate.py', 'agents.py', 'LICENSE']);
   });
 
   it('read a record whose table a formatter padded', async () => {

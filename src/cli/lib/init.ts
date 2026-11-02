@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { CLI_AGENT_NAMES, CONFIG_DIR, CONFIG_FILE, ConfigError } from '../../config/index.js';
-import { vendor, vendoredIn } from '../../project-rules/index.js';
+import { refresh as refreshTools, vendor } from '../../project-rules/index.js';
 
 /** A guess at the repo's checks from its manifests. The user confirms them. */
 async function guessChecks(root: string): Promise<{ prepare: string[]; checks: { name: string; run: string }[] }> {
@@ -37,7 +37,7 @@ async function guessChecks(root: string): Promise<{ prepare: string[]; checks: {
 
 /** Copies the project-rules tools into `dir` and says what changed. */
 async function vendorTools(dir: string, refresh: boolean, log: (line: string) => void): Promise<void> {
-  const { written, edited, version } = await vendor(dir, refresh ? vendoredIn(dir) : undefined);
+  const { written, edited, version } = await (refresh ? refreshTools(dir) : vendor(dir));
   if (written.length) log(`Vendored ${written.join(', ')} from Sloppatrol ${version} into ${dir}.`);
   for (const name of edited)
     log(`Kept ${name}: it was edited in this repo. Merge the shipped version by hand, or delete it and refresh again.`);
