@@ -186,10 +186,9 @@ Known limitation: a comment-shaped line inside a multi-line string literal is re
 
 ## Project rules
 
-`scripts/gate.py` is the reference implementation of this section. It is standard-library Python
-3.10+, contains no rules, makes no network calls and never imports project code. A
-repository vendors it byte for byte as `.sloppatrol/gate.py`. The command line, exit codes, script
-protocol and marker grammar are sloppatrol's public interface under semver.
+`gate.py` contains no rules, makes no network calls and never imports project code. A repository
+vendors it as `.sloppatrol/gate.py`. Its command line, exit codes, script protocol and marker
+grammar are sloppatrol's public interface under semver.
 
 ### Layout
 
@@ -407,8 +406,7 @@ problem needs judgment specific to this codebase (a domain invariant, a framewor
 
 ## Agent instructions
 
-`scripts/agents.py` is the reference implementation for this section. It is a Python 3.10+,
-stdlib-only helper; it never executes documented commands or fetches external content.
+`agents.py` never executes documented commands or fetches external content.
 
 ```sh
 python3 skills/sloppatrol/scripts/agents.py check [--root DIR] [--json] [--max-lines N] [--max-skill-lines N]
@@ -481,85 +479,25 @@ target; a target outside the repository is not checked. JSON lists the skill dir
 
 ### Path and command heuristics
 
-- Links: inspect literal inline destinations and reference definitions, including unused
-  definitions, outside fences/comments/inline code. Resolve against the instruction file's
-  directory only; strip fragments, decode percent escapes and escaped parentheses/spaces.
-  Strip source-location suffixes (`::symbol`, `:line`, `:line:column`, `:line-line`) from links
-  and inline paths. Ignore schemes (including mailto and `@file://`), pure anchors, absolute paths
-  and protocol-relative URLs.
-  Common single-line links, optional titles, angle-bracket destinations and balanced destination
-  parentheses are supported; this is not a full Markdown parser.
-- Inline code outside link labels (a label is display text; the destination is checked): a path contains `/` or ends in one of `agents.py`'s `PATH_EXTENSIONS` (common
-  source, config, documentation, image and archive extensions). Try the instruction directory,
-  then root, then directories explicitly named earlier on the same line and the parent of a
-  file linked earlier on that line. A linked `docs/topic/guide.md` also supplies the base for
-  `topic/details.md`; context never carries to another line. Try each literal path before glob
-  matching, so bracketed framework paths such as `app/docs/[[...slug]]/page.tsx` resolve literally.
-  Otherwise `*`, `?`, `[]` and recursive `**` use filesystem glob matching; at least one existing
-  file/directory must match. In a linked Git worktree, explicit `../` prose paths that leave the
-  worktree may also resolve relative to the instruction's location in the primary checkout, as
-  reported by `git worktree list --porcelain -z`. Only external sibling citations get this fallback;
-  local paths, Markdown link destinations and executable command paths do not. A missing sibling
-  still reports `dead-path`. Availability here proves a path exists, not its release or claim.
-  Expand comma braces such as `{one,two}` (including nested braces); every expansion must resolve. Ignore
-  brace lists containing `...` or the ellipsis character (U+2026), which are illustrative, not literal paths.
-  Ignore whitespace, placeholders `<...>`, URLs/schemes, absolute
-  paths, `-`/`~`/`$` prefixes, shell metacharacters, versions, and dotted identifiers with at least
-  three components such as `a.b.c`. An ambiguous slash identifier with exactly one slash and no
-  recognized extension is skipped unless its first component resolves to a directory; this
-  includes service role identifiers. Leading `.` paths, trailing `/` directories and globs
-  remain explicit. An adjacent prohibition (`no`, `no new`, `never/do not/don't add/create/introduce/use`)
-  does not claim a file exists. Skip a path prefixed by a repository name explicitly introduced
-  earlier on that line as a backticked name followed by `repo` or `repository`, for example
-  "In the `client` repository, see `client/src/export.ts:12`." This is an unchecked upstream
-  citation, not proof it resolves. Prefer a source permalink when the upstream is unavailable;
-  unprefixed paths or context on another line are not inferred as external.
-- Skill citations: inline paths or links to `.agents/skills/<name>/SKILL.md` or
-  `.claude/skills/<name>/SKILL.md`, plus links to those skill directories, require an existing
-  SKILL.md with frontmatter. Inline skill citations use the same explicit context and sibling
-  fallback as other prose paths. Report `dead-skill` instead of a duplicate missing-path/link error.
-  Frontmatter starts with `---`, closes with `---` or `...`, and has a non-empty string `name`
-  equal to its directory and a non-empty string `description`. Literal plain/quoted scalars and
-  `|`/`>` block scalars are supported; aliases, tags and collection-valued fields are not.
-- Commands: inspect untagged or `sh`, `bash`, `shell`, `console`, `zsh` fences. Join backslash
-  continuations, remove a leading `$ ` prompt, leading `A=b` assignments and unquoted trailing
-  comments, then split unquoted `&&`, `||`, `;`, `|` (also background `&`) and drop redirections (`> out.log`,
-  `2>&1`, `<in`), which name streams rather than targets or scripts. Honor shell quoting;
-  skip placeholder lines, malformed quoting and segments starting with shell control words.
-  Skip other fence languages and tree listings (branch-drawing characters or indented single-path
-  entries under a directory). In untagged fences, skip contiguous pipe-table rows with a Markdown
-  separator or ASCII table border; still inspect commands before/after the table. Label other
-  tabular data and command output as `text` to avoid command inference. Each block starts in the
-  instruction directory. A literal `cd` changes subsequent resolution; an unresolved `cd` skips the remainder of that block. This is static inspection, not shell
-  evaluation; conditionals, substitutions, generated targets and includes are not resolved.
-- `npm|pnpm|yarn|bun run <name>` checks the nearest ancestor package.json's `scripts`, stopping
-  at root; `bun run` also accepts an existing file, which Bun runs directly. `make <target>` checks literal target names in the nearest GNUmakefile/makefile/Makefile
-  (an existing file also counts); `just <recipe>` checks the nearest justfile/Justfile/.justfile.
-  Only the first just recipe is checked because later words can be arguments. Make/just commands
-  selecting another file/directory are skipped; dynamic names and assignments are skipped.
-  Numeric make job/load option values are excluded from target names.
-- `uv run <name>` accepts an exact project script name, a normalized dependency name, or an
-  executable on PATH or in an ancestor `.venv/bin` or `.venv/Scripts`, stopping at root.
-  Literal TOML extraction covers project scripts/gui scripts, project and optional dependencies,
-  all dependency groups, legacy `tool.uv.dev-dependencies`, and Poetry
-  scripts/dependency tables. Included-group labels are not executable names. Runner forms with
-  options before `run` or before its name are not resolved.
-- Relative command words and the first script argument to Python, Lua/LuaJIT, Node, Ruby and
-  sh/bash/zsh use the path/glob and brace-expansion checks (including after `uv run`) against the
-  block's current directory only, with no root fallback: that is where the command runs. The prose `owner/repo` and
-  dotted-import exemptions do not apply to commands. Interpreter `-m`, `-c`, `-e`, `--eval` and
-  `--command` forms are skipped. Other arguments are not treated as input files: they may name
-  outputs. Unknown non-path command words produce notes, excluding shell builtins/control words
-  and dynamic command words. Executables in ancestor `.venv/bin` or `.venv/Scripts` also count
-  as available, stopping at root. Missing executables alone never fail the check.
+This is static inspection, not a Markdown parser or a shell. `agents.py` is the full grammar; what a
+writer controls:
 
-
-
-## Report
-
-An audit report is committed at `.sloppatrol/reports/<YYYY-MM-DD>.md`, or
-`<YYYY-MM-DD>-<n>.md` when that date already has a report. Never overwrite a report. Use
-[assets/report.md](../assets/report.md), and include the scope, gate before and after, open work,
-carried-forward ledger items, slices and independence labels, confirmed items and guards, decisions,
-bugs, gate loosening, gate growth and the next step. Build the Guard column from
-`python3 <skill>/scripts/ledger.py list --json`, not by hand.
+- **Links** resolve against the instruction file's directory. Fragments, `:line` and `::symbol`
+  suffixes are stripped; URLs, anchors and absolute paths are skipped.
+- **Inline code** is a path when it contains `/` or ends in a known extension (`PATH_EXTENSIONS`).
+  It is tried against the instruction directory, the root, and directories named earlier on the
+  same line. A glob must match at least one file, and every `{a,b}` alternative must resolve.
+  Skipped: placeholders `<...>`, brace lists with `...`, URLs, `-`/`~`/`$` prefixes, shell
+  metacharacters, versions, `a.b.c` identifiers, and a single-slash name with no known extension
+  whose first part is not a directory.
+  In a linked worktree, an explicit `../` path may also resolve from the primary checkout.
+- **Not a claim.** A path after `no`, `no new`, or `never`, `do not` or `don't` followed by `add`,
+  `create`, `introduce` or `use` is not checked. Nor is one prefixed by a repository introduced
+  earlier on the line as a backticked name followed by `repo` or `repository` ("In the `client`
+  repository, see `client/src/export.ts`").
+- **Commands** come from untagged and shell fences (`sh`, `bash`, `shell`, `console`, `zsh`), each
+  starting in the instruction directory; a literal `cd` moves it. Label output and tables `text`.
+  `npm|pnpm|yarn|bun run`, `make`, `just` and `uv run` names are checked against the nearest
+  manifest. A path-like command word or first script argument to an interpreter must exist,
+  resolved from the block's directory (`dead-script`). A bare command name not on `PATH` is only a
+  note.

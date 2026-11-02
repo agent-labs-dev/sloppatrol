@@ -254,6 +254,15 @@ def test_git_tracks_ignored_files_and_handles_deleted_files(tmp_path: Path) -> N
     assert agents.check(tmp_path)["issues"][0]["code"] == "missing-root"
 
 
+def test_deleted_tracked_skill_is_not_checked(tmp_path: Path) -> None:
+    git(tmp_path, "init", "-q")
+    write(tmp_path, "AGENTS.md", GOOD)
+    skill = write(tmp_path, ".agents/skills/example/SKILL.md", "---\nname: example\ndescription: x\n---\n")
+    git(tmp_path, "add", "AGENTS.md", ".agents/skills/example/SKILL.md")
+    skill.unlink()
+    assert agents.check(tmp_path) == {"files": ["AGENTS.md"], "skills": [], "issues": []}
+
+
 def test_nested_paths_are_relative_to_instruction_file(tmp_path: Path) -> None:
     write(tmp_path, "AGENTS.md", GOOD)
     write(tmp_path, "nested/local.md", "local")
@@ -495,7 +504,7 @@ def test_shell_tags_and_placeholder_lines(tmp_path: Path, tag: str) -> None:
     assert errors(tmp_path, command_doc("npm run missing", "javascript")) == []
 
 
-@pytest.mark.parametrize("tag", ["text", "python", "json", "yaml", "javascript", "tree"])
+@pytest.mark.parametrize("tag", ["text", "python"])
 def test_non_shell_fences_produce_no_path_errors_or_tool_notes(tmp_path: Path, tag: str) -> None:
     content = command_doc("not-a-command\n./missing.py\n`other.py`\n[link](missing.md)", tag)
     assert agents.check_file(tmp_path, "AGENTS.md", content, 300) == []

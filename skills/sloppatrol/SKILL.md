@@ -62,29 +62,19 @@ sharper; it is not a precondition. The same holds for the project gate without
 
 Load only what the procedure points at. The shared contracts (run files, findings, outcomes,
 suppressions, project rules and shipped helper interfaces) live in [references/contracts.md](references/contracts.md).
-The review lenses live in [references/lenses](references/lenses/) and per-language toolchains in
-`references/languages/<lang>.md`.
+The review lenses live in [references/lenses](references/lenses/), one file per id, and per-language
+toolchains in `references/languages/<lang>.md`.
 
-The built-in lenses are [comment-narration](references/lenses/comment-narration.md),
-[copy-slop](references/lenses/copy-slop.md), [dead-code](references/lenses/dead-code.md),
-[defensive-noise](references/lenses/defensive-noise.md), [hidden-dependency](references/lenses/hidden-dependency.md),
-[interface-leak](references/lenses/interface-leak.md), [oversized-modules](references/lenses/oversized-modules.md),
-[parallel-implementations](references/lenses/parallel-implementations.md), [reader-journey](references/lenses/reader-journey.md),
-[reinvented-wheel](references/lenses/reinvented-wheel.md), [session-residue](references/lenses/session-residue.md),
-[shallow-modules](references/lenses/shallow-modules.md), [silent-fallbacks](references/lenses/silent-fallbacks.md),
-[speculative-abstraction](references/lenses/speculative-abstraction.md), [stale-docs](references/lenses/stale-docs.md),
-[stringly-typed](references/lenses/stringly-typed.md), [test-plumbing](references/lenses/test-plumbing.md),
-and [wall-of-text](references/lenses/wall-of-text.md).
 
 ## 6. Audit helpers
 
 All are single-file, standard-library Python 3.10+. Run the skill's scripts from the target repository
-root as `python3 <this skill's directory>/scripts/<name>.py`:
+root as `python3 <this skill's directory>/scripts/<name>.py`. `scripts/LICENSE` travels with the copies
+`sloppatrol init` vendors.
 
 - `.sloppatrol/gate.py` is the project's gate for its own rules, vendored by `sloppatrol init`. It runs the ast-grep and script rules with their tests and checks every `sloppatrol:` marker. Exit 2 means the gate itself cannot run: fix the gate, not the code.
 - `scripts/ledger.py` is the audit's memory and anchor: it proves a review's quotes exist and that it lists every file in its slice, and records candidates and verdicts in `.sloppatrol/ledger.json`, a single file.
 - `scripts/agents.py` checks that `AGENTS.md` is complete and not stale. Run `scripts/agents.py check`; it has no other audit subcommand.
-- `scripts/LICENSE` is the MIT licence of these scripts. `sloppatrol init` vendors it next to the copies; keep it with them.
 
 If Python is unavailable, do the same checks by hand and say that you did. The gate alone is
 `python3 .sloppatrol/gate.py`. `npx sloppatrol check` remains the patrol CLI command that runs the
@@ -119,6 +109,6 @@ repository's configured checks.
 ## 8. Audit output
 
 End every run with a short report: what was run, what changed (per slice or per gap), what was
-found but left alone and why, and the single next command worth running. Use
-[assets/report.md](assets/report.md) and save the report under `.sloppatrol/reports/`.
+found but left alone and why, and the single next command worth running. An audit uses
+[assets/report.md](assets/report.md), as [audit.md](references/audit.md#8-report) says.
 
