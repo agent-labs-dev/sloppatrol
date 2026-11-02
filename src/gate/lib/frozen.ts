@@ -74,6 +74,11 @@ export const FROZEN = [
   'docker-compose*',
   '.env*',
   '.sloppatrol',
+  // The rules every role and assessor reads.
+  'AGENTS.md',
+  'CLAUDE.md',
+  '.agents/skills/sloppatrol-project',
+  '.claude/skills/sloppatrol-project',
   // Snapshots pin rendered output.
   '__snapshots__',
   '*.snap',

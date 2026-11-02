@@ -3,7 +3,8 @@
 
 ```text
 Start
-  sloppatrol init              Create .sloppatrol/ with a guess at your checks
+  sloppatrol init              Create .sloppatrol/ with a guess at your checks, and vendor the rules gate
+  sloppatrol init --refresh    Update the vendored gate and AGENTS.md check; keep local edits
   sloppatrol doctor            Show the config, the agent each role runs on, and what is missing
 
 Run
@@ -25,5 +26,7 @@ Read
 ```
 
 `sloppatrol score` scores each file that has no score yet, then serves the dashboard and opens its share page: a card to post, with a button that saves it as a PNG. It does not run your checks, because a score verifies nothing, so it works also while main is red. `--files <n>` scores at most `n` more files, `--no-open` does not open the browser, and `--no-dashboard` only prints the scorecard.
+
+`sloppatrol init --refresh` updates the vendored [project-rules tools](project-rules.md) and keeps a copy you edited.
 
 Add `--cwd <dir>` to run a command in another repo. `sloppatrol --help` shows the usage.

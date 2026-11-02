@@ -8,7 +8,14 @@ export type RepoRules = { text: string; sources: string[] };
 /** Agent guides, read in every folder from the repo root down to a changed file. */
 const AGENT_GUIDES = ['AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md'];
 /** Other written rules, read at the repo root only. */
-const ROOT_GUIDES = ['CONTRIBUTING.md', 'CODING_STANDARDS.md', 'GLOSSARY.md', 'CONTEXT.md'];
+const ROOT_GUIDES = [
+  'CONTRIBUTING.md',
+  'CODING_STANDARDS.md',
+  'GLOSSARY.md',
+  'CONTEXT.md',
+  // What the audit settled: anti-patterns, settled calls, project rules.
+  '.agents/skills/sloppatrol-project/SKILL.md',
+];
 /** A guide this long is still read whole; past it, the agent gets a note that it was cut. */
 const MAX_FILE = 100_000;
 const IMPORT = /^@(\S+)\s*$/;

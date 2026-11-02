@@ -43,11 +43,11 @@ An agent proposes; code decides. A refactor is kept only when every step below p
 | Step | What it checks |
 | --- | --- |
 | One side | A **source** refactor changes no test file, so your existing tests prove the behaviour held. A **tests** refactor changes no source file, so the unchanged source proves the new tests right. |
-| Frozen files | No manifest, lockfile, tool config, CI file, snapshot or `.env` changes. No path in `ignore`. |
-| No suppression | No added `@ts-ignore`, `eslint-disable`, `# type: ignore`, `as any`, coverage exclusion, or skipped or focused test. A suppression that moves with its code is fine. |
+| Frozen files | No manifest, lockfile, tool config, CI file, snapshot or `.env` changes, and no change to `AGENTS.md`, `CLAUDE.md` or the project skill. No path in `ignore`. |
+| No suppression | No added `@ts-ignore`, `eslint-disable`, `# type: ignore`, `as any`, `sloppatrol:` marker, coverage exclusion, or skipped or focused test. A suppression that moves with its code is fine. |
 | Tests kept | The diff removes no test case, and changes no test file that no check runs (`uncheckedTests`). |
 | Size | At most `guards.maxFiles` files and `guards.maxLines` lines. |
-| Checks | Every command in `checks` passes, as it passes on `main`. Sloppatrol does no work while `main` is red. |
+| Checks | Every command in `checks` passes, as it passes on `main`, and so does the repo's [project-rules gate](project-rules.md) when it has one. Sloppatrol does no work while `main` is red. |
 | Mutation | A **tests** refactor plants one bug in the unchanged source; a test check must turn red. A test that cannot fail proves nothing. |
 | Improvement | The assessor scores the changed files before and after, blind. The target metrics must go up; no other metric may drop. |
 | Review | A reviewer agent reads the diff against the playbook, and rejects when in doubt. |
@@ -64,7 +64,7 @@ Every pull request carries its proof, built by code and by a blind assessor, nev
 
 ## Your repo's rules
 
-Every agent reads your repo's own rules before it acts, and they win over the playbook: `.sloppatrol/instructions.md`, every `AGENTS.md` and `CLAUDE.md` from the repo root down to the changed files (with their `@path` imports), `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `GLOSSARY.md`, and the titles of your decision records. `sloppatrol doctor` lists what it found.
+Every agent reads your repo's own rules before it acts, and they win over the playbook: `.sloppatrol/instructions.md`, every `AGENTS.md` and `CLAUDE.md` from the repo root down to the changed files (with their `@path` imports), `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `GLOSSARY.md`, the project skill (`.agents/skills/sloppatrol-project/SKILL.md`), and the titles of your decision records. The surveyor also reads the confirmed findings of your [audit ledger](project-rules.md). `sloppatrol doctor` lists what it found.
 
 ## The playbook
 
@@ -72,7 +72,7 @@ The agents follow a [playbook](../playbook/) of top-tier engineering practice, w
 
 - [Principles](../playbook/principles.md): deep modules, seams, ports and adapters, one owner per concept, separation of concerns, dependency injection, single responsibility, small files, no sediment. The vocabulary comes from Ousterhout, Feathers, Fowler, and [Matt Pocock's skills](https://github.com/mattpocock/skills).
 - [Testing](../playbook/testing.md): test through the interface; fakes injected through a seam, never a mocking library for your own code.
-- [Smells](../playbook/smells.md) and [Safety](../playbook/safety.md): what to look for, and the behaviour a refactor must keep.
+- [Lenses](../skills/sloppatrol/references/lenses/), [Smells](../playbook/smells.md) and [Safety](../playbook/safety.md): what to look for, and the behaviour a refactor must keep. The lenses are the same set the [audit](project-rules.md) uses.
 - One page per stack, picked from what the census detects: [TypeScript](../playbook/stacks/typescript.md), [React and React Native](../playbook/stacks/react.md), [Node backends](../playbook/stacks/node-backend.md), [Python](../playbook/stacks/python.md), [Go](../playbook/stacks/go.md), [Swift](../playbook/stacks/swift.md), [Kotlin](../playbook/stacks/kotlin.md), [Rust](../playbook/stacks/rust.md).
 
 Your repo's own rules win over the playbook.

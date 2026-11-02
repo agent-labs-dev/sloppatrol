@@ -23,6 +23,8 @@ github: { enabled: true, draft: false, maxOpen: 3, labels: [sloppatrol] }
 patrol: { intervalMinutes: 60, pull: origin/main }
 ```
 
+When `.sloppatrol/gate.py` exists, a `project-rules` check that runs it over the change since `patrol.pull` joins `checks`, unless a check already runs it.
+
 Every role also takes `maxSteps`, `timeoutMinutes` and `budgetUsd` (model runtime). Pull requests open with your `gh` login.
 
 `cleanup` runs in the refactorer's worktree after its session and before the gate: deterministic, mechanical tidy-up such as removing an import the edit made unused or formatting. A failing cleanup command is logged and left to the checks, so it never decides a verdict by itself. It is not a check and never weakens one.
