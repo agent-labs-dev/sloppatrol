@@ -7,6 +7,7 @@ export type Argv = {
 const COMMANDS = new Set([
   'patrol',
   'init',
+  'migrate',
   'doctor',
   'check',
   'survey',
