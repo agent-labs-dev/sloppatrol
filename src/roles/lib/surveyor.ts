@@ -1,6 +1,6 @@
 import { finishTool, type RoleOutcome, repoTools, runRole, str, strList, tool } from '../../agents/index.js';
 import { type Census, censusMarkdown } from '../../census/index.js';
-import { CONFIG_DIR, type LoadedConfig, resolveRuntime } from '../../config/index.js';
+import { type LoadedConfig, resolveRuntime } from '../../config/index.js';
 import {
   fingerprintOf,
   isMetricId,

@@ -19,7 +19,8 @@ const GATE_CODES =
   'config|base|unknown-id|weak-reason|bad-marker|trailing-marker|ast-grep-ignore|ast-grep|unused-marker|rule-test|script-test|script-protocol';
 /** The mechanical renames, in order. Prose that names Sift is left for a person. */
 const RENAMES: [RegExp, string][] = [
-  [/\.sift\b/g, CONFIG_DIR],
+  // Not after a word, `.` or `-`: `ads.sift.co.uk` is a host, not the folder.
+  [/(?<![\w.-])\.sift\b/g, CONFIG_DIR],
   [/\bsift-project\b/g, NEW_SKILL],
   [/\bsift:(\s*[A-Za-z0-9][\w-]*\s+-\s)/g, 'sloppatrol:$1'],
   [/\bsift-(scope|fix|inputs)\b/g, 'sloppatrol-$1'],

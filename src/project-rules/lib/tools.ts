@@ -19,7 +19,9 @@ const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
 
 /** The hashes SOURCE.md recorded when each tool was last vendored. */
 function recorded(source: string): Map<string, string> {
-  return new Map([...source.matchAll(/^\| `([^`]+)` \| `([0-9a-f]{64})` \|$/gm)].map((m) => [m[1] ?? '', m[2] ?? '']));
+  return new Map(
+    [...source.matchAll(/^\| `([^`]+)` \| `([0-9a-f]{64})` \|\r?$/gm)].map((m) => [m[1] ?? '', m[2] ?? '']),
+  );
 }
 
 type Vendored = { written: string[]; edited: string[]; version: string };

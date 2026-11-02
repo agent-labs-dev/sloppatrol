@@ -56,6 +56,8 @@ export async function loadConfig(cwd: string): Promise<LoadedConfig> {
  */
 function withProjectRules(config: SloppatrolConfig, dir: string): SloppatrolConfig {
   if (!existsSync(join(dir, GATE)) || config.checks.some((c) => c.run.includes(`${CONFIG_DIR}/${GATE}`))) return config;
-  const run = `python3 "$(git rev-parse --show-toplevel)/${CONFIG_DIR}/${GATE}" --base '${config.patrol.pull.replaceAll("'", "'\\''")}'`;
+  // The base checkout may predate the gate: then neither side runs it, so the two still compare.
+  const gate = `"$(git rev-parse --show-toplevel)/${CONFIG_DIR}/${GATE}"`;
+  const run = `[ ! -f ${gate} ] || python3 ${gate} --base '${config.patrol.pull.replaceAll("'", "'\\''")}'`;
   return { ...config, checks: [...config.checks, { name: 'project-rules', run, timeoutMinutes: 20, tests: false }] };
 }

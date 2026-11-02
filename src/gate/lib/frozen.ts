@@ -78,6 +78,7 @@ export const FROZEN = [
   'AGENTS.md',
   'CLAUDE.md',
   '.agents/skills/sloppatrol-project',
+  '.claude/skills/sloppatrol-project',
   // Snapshots pin rendered output.
   '__snapshots__',
   '*.snap',

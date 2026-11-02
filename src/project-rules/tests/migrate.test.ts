@@ -69,6 +69,7 @@ describe('sloppatrol migrate', () => {
       'src/cli.py': `${MARKER}\nprint("hi")\n`,
       'AGENTS.md': 'Load `.agents/skills/sift-project/SKILL.md`. Codes: sift-unknown-id.\n',
       'CHANGELOG.md': 'Added `.sift/gate.py`.\n',
+      'tools/paths.py': 'RULES = ROOT / ".sift" / "rules"\nBLOCK = "*://*.ads.sift.co.uk/*"\n',
     });
     const lines: string[] = [];
 
@@ -89,6 +90,9 @@ describe('sloppatrol migrate', () => {
     expect(readFileSync(join(repo, 'src/cli.py'), 'utf8')).toContain('# sloppatrol: no-print - the CLI');
     expect(readFileSync(join(repo, 'AGENTS.md'), 'utf8')).toBe(
       'Load `.agents/skills/sloppatrol-project/SKILL.md`. Codes: sloppatrol-unknown-id.\n',
+    );
+    expect(readFileSync(join(repo, 'tools/paths.py'), 'utf8')).toBe(
+      'RULES = ROOT / ".sloppatrol" / "rules"\nBLOCK = "*://*.ads.sift.co.uk/*"\n',
     );
     expect(readlinkSync(join(repo, '.claude/skills/sloppatrol-project'))).toBe(
       '../../.agents/skills/sloppatrol-project',
