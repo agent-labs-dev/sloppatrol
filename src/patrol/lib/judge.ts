@@ -57,8 +57,6 @@ export async function judge(
     behaviour: {
       side: opportunity.side,
       guards: GUARDS,
-      baseRunId: base?.id,
-      headRunId: run.id,
       testsBase: base ? testsPassed(base.results) : undefined,
       testsHead: testsPassed(run.results),
     },
@@ -75,27 +73,23 @@ export async function judge(
     if (!input.mutation) return reject('No mutation: nothing shows the new tests can fail.', verdict, proof);
     const mutation = input.mutation;
     await ctx.store.setStatus({ role: 'gate', state: 'running', detail: `Mutation on ${branch}` });
-    const after = await mutationProof(ctx, { dir: worktree, mutation, sha: baseSha, refactorId: id, branch });
-    proof.behaviour.mutation = { ...mutation, ...after };
+    const caught = await mutationProof(ctx, { dir: worktree, mutation, sha: baseSha, refactorId: id, branch });
+    proof.behaviour.mutation = { ...mutation, caught };
     await save({ proof });
-    if (!after.caught)
+    if (!caught)
       return reject('The tests did not catch the planted bug: they cannot fail where it matters.', verdict, proof);
     if (gainOf(opportunity.kind) === 'coverage') {
       // New coverage: the same bug must slip past the old tests on main.
-      const before = await mutationProof(ctx, {
+      const caughtBefore = await mutationProof(ctx, {
         dir: input.baseDir,
         mutation,
         sha: baseSha,
         refactorId: id,
         branch: 'main',
       });
-      proof.behaviour.mutation = {
-        ...proof.behaviour.mutation,
-        caughtBefore: before.caught,
-        beforeRunId: before.runId,
-      };
+      proof.behaviour.mutation = { ...proof.behaviour.mutation, caughtBefore };
       await save({ proof });
-      if (before.caught)
+      if (caughtBefore)
         return reject(
           'The old tests already catch the planted bug: the new tests add no proven coverage.',
           verdict,

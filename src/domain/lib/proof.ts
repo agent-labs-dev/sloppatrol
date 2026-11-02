@@ -10,19 +10,14 @@ export type Proof = {
     side: Side;
     /** The guards the diff passed. */
     guards: string[];
-    /** The check runs on the base commit and on the refactor: the same commands. */
-    baseRunId?: string;
-    headRunId?: string;
     /** Tests that ran, read from the check output when it says. */
     testsBase?: number;
     testsHead?: number;
     /** A tests refactor: a source change its tests must catch. */
     mutation?: Mutation & {
       caught: boolean;
-      runId?: string;
       /** A characterize refactor: whether the old tests on main caught it too. They must not. */
       caughtBefore?: boolean;
-      beforeRunId?: string;
     };
   };
   improvement?: Improvement;
