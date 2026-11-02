@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -87,9 +87,12 @@ describe('the project-rules tools', () => {
     );
     mkdirSync(join(checkout, 'src'), { recursive: true });
     writeFileSync(join(checkout, file), `${quote}\n    pass\n`);
-    expect(await confirmedFindings(checkout, join(source, '.sloppatrol'))).toMatchObject([{ id, file, line: 1 }]);
+    const ledger = join(source, '.sloppatrol', 'ledger.json');
+    expect(await confirmedFindings(checkout, ledger)).toMatchObject([{ id, file, line: 1 }]);
+    // The ledger is read where audits write it; the patrolled checkout stays untouched.
+    expect(existsSync(join(checkout, '.sloppatrol', 'ledger.json'))).toBe(false);
     // The quote is gone in the patrolled commit, so the finding no longer applies there.
     writeFileSync(join(checkout, file), 'def renamed():\n    pass\n');
-    expect(await confirmedFindings(checkout, join(source, '.sloppatrol'))).toEqual([]);
+    expect(await confirmedFindings(checkout, ledger)).toEqual([]);
   });
 });

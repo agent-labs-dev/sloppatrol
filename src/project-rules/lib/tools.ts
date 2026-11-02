@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -90,29 +90,31 @@ export type Finding = {
   what: string;
 };
 
-/** Runs the shipped ledger tool on the ledger at `root`. */
-async function ledger(root: string, ...args: string[]): Promise<string> {
+/** Runs the shipped ledger tool on the ledger at `ledgerPath`, resolving paths against `root`. */
+async function ledger(root: string, ledgerPath: string, ...args: string[]): Promise<string> {
   const script = join(SHIPPED, 'ledger.py');
-  return (await run('python3', [script, '--root', root, ...args], { maxBuffer: 64 * 1024 * 1024 })).stdout;
+  return (
+    await run('python3', [script, '--root', root, '--ledger', ledgerPath, ...args], {
+      maxBuffer: 64 * 1024 * 1024,
+    })
+  ).stdout;
 }
 
 /**
  * The confirmed findings whose quote is still in the code at `root`, read from
- * the ledger in `ledgerDir`; none when there is no ledger. The patrol surveys a
+ * the ledger at `ledgerPath`; none when there is no ledger. The patrol surveys a
  * detached checkout, which never inherits the git-ignored ledger that audits
- * write beside the source checkout, so the ledger is copied in before it runs.
- * Its quotes are still checked against the code at `root`.
+ * write beside the source checkout, so the ledger is read where it lives and its
+ * quotes are checked against the patrolled checkout. Nothing is written into it.
  */
-export async function confirmedFindings(root: string, ledgerDir = join(root, CONFIG_DIR)): Promise<Finding[]> {
-  const source = join(ledgerDir, 'ledger.json');
-  if (!existsSync(source)) return [];
-  const target = join(root, CONFIG_DIR, 'ledger.json');
-  if (source !== target) {
-    await mkdir(join(root, CONFIG_DIR), { recursive: true });
-    await copyFile(source, target);
-  }
-  const items = JSON.parse(await ledger(root, 'list', '--status', 'confirmed', '--json')) as (Omit<Finding, 'line'> & {
-    line: number | null;
-  })[];
+export async function confirmedFindings(
+  root: string,
+  ledgerPath = join(root, CONFIG_DIR, 'ledger.json'),
+): Promise<Finding[]> {
+  if (!existsSync(ledgerPath)) return [];
+  const items = JSON.parse(await ledger(root, ledgerPath, 'list', '--status', 'confirmed', '--json')) as (Omit<
+    Finding,
+    'line'
+  > & { line: number | null })[];
   return items.filter((item): item is Finding => item.line !== null);
 }
