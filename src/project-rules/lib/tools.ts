@@ -84,7 +84,7 @@ export type Finding = {
 };
 
 /** Runs the shipped ledger tool on the ledger at `root`. */
-export async function ledger(root: string, ...args: string[]): Promise<string> {
+async function ledger(root: string, ...args: string[]): Promise<string> {
   const script = join(SHIPPED, 'ledger.py');
   return (await run('python3', [script, '--root', root, ...args], { maxBuffer: 64 * 1024 * 1024 })).stdout;
 }

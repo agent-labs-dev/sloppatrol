@@ -3,7 +3,6 @@ export const USAGE = `sloppatrol: a team of agents that makes your code cleaner,
 Start
   sloppatrol init              Create .sloppatrol/ with a guess at your checks, and vendor the rules gate
   sloppatrol init --refresh    Update the vendored gate and AGENTS.md check; keep local edits
-  sloppatrol migrate           Move a repository's .sift/ rules, ledger and markers to .sloppatrol/, once
   sloppatrol doctor            Show the config, the agent each role runs on, and what is missing
 
 Run

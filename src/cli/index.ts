@@ -18,7 +18,6 @@ import {
   surveyNow,
 } from '../patrol/index.js';
 import { stopAll } from '../processes/index.js';
-import { migrate } from '../project-rules/index.js';
 import { scorecardMarkdown } from '../roles/index.js';
 import { Store } from '../store/index.js';
 import { intFlag, parseArgv, strFlag } from './lib/argv.js';
@@ -93,10 +92,6 @@ async function main(args: string[]): Promise<number> {
   }
   if (flags.help || command === 'help') {
     out(USAGE);
-    return EXIT.ok;
-  }
-  if (command === 'migrate') {
-    await migrate(cwd, log);
     return EXIT.ok;
   }
   if (command === 'init') {
