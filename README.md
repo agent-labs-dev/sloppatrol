@@ -88,6 +88,15 @@ An assessor agent scores each file on the [seven metrics](docs/metrics.md), from
 
 Sloppatrol scores the last commit on `origin/main`, not your local changes. The first run can take some minutes on a large repo. Sloppatrol keeps each score, so the next run scores only the files that changed. `--files <n>` scores at most `n` files in one run.
 
+### Review a pull request
+
+```bash
+npx sloppatrol review 42            # a pull request number or URL
+npx sloppatrol review feat/my-branch
+```
+
+Sloppatrol scores only the files that the pull request or branch changes. It scores each file at the head and at the merge base, and prints the change per file, worst first. A pull request compares with its base branch. A branch compares with `patrol.pull` (`origin/main` by default). `--base <ref>` sets another base. The command exits 1 when a file loses 10 points or more.
+
 ## The dashboard
 
 `npx sloppatrol` serves a live dashboard on http://127.0.0.1:4322. The **Overview** tells you at a glance if the patrol is healthy: the checks on main, what waits for your decision, the code quality and its change, and the last cycle. Then it lists what needs attention, with the command to run next.

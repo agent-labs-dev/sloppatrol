@@ -80,19 +80,19 @@ async function assessInBatches(
 }
 
 /**
- * The scorecard of `sha`. Every file whose content and rubric were scored
- * before keeps its scores; up to `budget` unscored files get their first
- * score now. So the scorecard covers more of the repo each cycle, a file is
- * judged once per content, and the trend moves only where code changed.
+ * The scores of `paths` in the checkout `dir` of `sha`. Every file whose
+ * content and rubric were scored before keeps its scores; up to `budget`
+ * unscored files get their first score now. Returns the scored files and
+ * every file that was read.
  */
-export async function scorecardFor(
+export async function scoreFiles(
   ctx: RoleContext,
-  input: { dir: string; sha: string; census: Census; budget?: number },
-): Promise<Scorecard> {
+  input: { dir: string; sha: string; paths: readonly string[]; census: Census; budget?: number },
+): Promise<{ scored: UnitScores[]; files: File[] }> {
   const { config } = ctx.loaded;
   const budget = input.budget ?? config.metrics.panel;
   const files: File[] = [];
-  for (const path of input.census.files) {
+  for (const path of input.paths) {
     const text = await readFile(join(input.dir, path), 'utf8').catch(() => undefined);
     if (text !== undefined)
       files.push({ path, text, hash: contentHash(path, text), isTest: matchesAny(path, config.tests) });
@@ -128,6 +128,19 @@ export async function scorecardFor(
       scored.push(unit);
     }
   }
+  return { scored, files };
+}
+
+/**
+ * The scorecard of `sha`: the scores of every file in the census. So the
+ * scorecard covers more of the repo each cycle, a file is judged once per
+ * content, and the trend moves only where code changed.
+ */
+export async function scorecardFor(
+  ctx: RoleContext,
+  input: { dir: string; sha: string; census: Census; budget?: number },
+): Promise<Scorecard> {
+  const { scored, files } = await scoreFiles(ctx, { ...input, paths: input.census.files });
   const lines = (f: { text: string }) => f.text.split('\n').length;
   const scorecard: Scorecard = {
     sha: input.sha,

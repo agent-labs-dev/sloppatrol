@@ -10,6 +10,7 @@ Run
   sloppatrol --once            One cycle, then stop
   sloppatrol dashboard         Only the dashboard (http://127.0.0.1:4322)
   sloppatrol score             Score every file, then open the scorecard, ready to share
+  sloppatrol review <pr|ref>   Score the files a pull request or branch changes, against its merge base
 
 One step at a time
   sloppatrol check             Run your checks on the patrolled commit (the oracle)
@@ -26,6 +27,7 @@ Flags
   --agent <name>    init: auto (default), claude, codex or opencode
   --port <n>        The dashboard port (default 4322)
   --files <n>       score: score at most <n> more files in this run
+  --base <ref>      review: compare with <ref> (default: the pull request's base, else patrol.pull)
   --no-dashboard    Patrol or score without the dashboard
   --no-open         score: do not open the browser
   --cwd <dir>       Run as if in <dir>

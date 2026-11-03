@@ -12,6 +12,7 @@ const COMMANDS = new Set([
   'survey',
   'refactor',
   'score',
+  'review',
   'status',
   'census',
   'dismiss',
@@ -21,7 +22,7 @@ const COMMANDS = new Set([
 ]);
 
 /** Flags that take a value. Every other flag is a boolean. */
-const VALUED = new Set(['agent', 'reason', 'cwd', 'port', 'files']);
+const VALUED = new Set(['agent', 'reason', 'cwd', 'port', 'files', 'base']);
 
 /** `sloppatrol [command] [args] [--flag value | --flag]`. No command means the patrol. */
 export function parseArgv(args: string[]): Argv {

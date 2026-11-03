@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { git } from '../../git/index.js';
-import type { GitHub, NewPullRequest, PullRequestState } from './port.js';
+import type { GitHub, NewPullRequest, PullRequestRefs, PullRequestState } from './port.js';
 
 const exec = promisify(execFile);
 
@@ -57,5 +57,12 @@ export class GhCliGitHub implements GitHub {
   async pullRequestState(url: string): Promise<PullRequestState> {
     const { state } = JSON.parse(await this.gh(['pr', 'view', url, '--json', 'state'])) as { state: string };
     return state === 'MERGED' ? 'merged' : state === 'CLOSED' ? 'closed' : 'open';
+  }
+
+  async pullRequestRefs(number: number): Promise<PullRequestRefs> {
+    const pr = JSON.parse(
+      await this.gh(['pr', 'view', String(number), '--json', 'headRefName,baseRefName,headRefOid']),
+    ) as { headRefName: string; baseRefName: string; headRefOid: string };
+    return { headSha: pr.headRefOid, headRef: pr.headRefName, baseRef: pr.baseRefName };
   }
 }
