@@ -197,6 +197,11 @@ export function regressed(review: Review): boolean {
   return review.files.some((f) => f.delta !== undefined && f.delta <= -REGRESSION_POINTS);
 }
 
+/** The files the assessor gave no score: at the head, or at the base of a file the change did not add. */
+export function unscored(review: Review): string[] {
+  return review.files.filter((f) => f.head === undefined || (!f.added && f.base === undefined)).map((f) => f.path);
+}
+
 const pct = (n: number | undefined) => (n === undefined ? '–' : `${n}%`);
 const signed = (n: number | undefined) => (n === undefined ? '' : n > 0 ? `+${n}` : String(n));
 
@@ -226,6 +231,9 @@ export function reviewMarkdown(review: Review): string {
     ].join('\n'),
   );
   if (review.deleted) lines.push(`${review.deleted} deleted file(s) are not scored.`);
+  const missing = unscored(review);
+  if (missing.length)
+    lines.push(`The review is incomplete: the assessor gave no score to ${missing.map((p) => `\`${p}\``).join(', ')}.`);
   lines.push(
     regressed(review)
       ? `A file lost ${REGRESSION_POINTS} points or more.`

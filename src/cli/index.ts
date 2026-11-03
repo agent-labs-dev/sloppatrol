@@ -20,6 +20,7 @@ import {
   reviewTarget,
   scoreNow,
   surveyNow,
+  unscored,
 } from '../patrol/index.js';
 import { stopAll } from '../processes/index.js';
 import { scorecardMarkdown } from '../roles/index.js';
@@ -157,7 +158,7 @@ async function main(args: string[]): Promise<number> {
       stopOnSignal(store);
       const review = await reviewNow(loaded, deps, { target: reviewTarget(target), base: strFlag(flags, 'base') });
       out(reviewMarkdown(review));
-      return regressed(review) ? EXIT.failed : EXIT.ok;
+      return regressed(review) || unscored(review).length ? EXIT.failed : EXIT.ok;
     }
     case 'status':
       await status(store, out);

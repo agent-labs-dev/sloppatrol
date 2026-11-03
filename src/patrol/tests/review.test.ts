@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createRuntime } from '../../agents/index.js';
 import { loadConfig } from '../../config/index.js';
 import { FakeGitHub } from '../../github/index.js';
-import { type PatrolDeps, regressed, reviewMarkdown, reviewNow, reviewTarget } from '../../patrol/index.js';
+import { type PatrolDeps, regressed, reviewMarkdown, reviewNow, reviewTarget, unscored } from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
 import { fixtureRepo, gitIn, script } from './fixture.js';
 
@@ -133,5 +133,33 @@ describe('a review', () => {
     expect(review.files).toEqual([
       { path: 'src/cost.js', renamedFrom: 'src/price.js', added: false, base: 75, head: 75, delta: 0 },
     ]);
+  });
+
+  it('is incomplete when the assessor fails on both sides', async () => {
+    const { loaded, deps } = await setUp();
+    script('assessor', [{ tool: 'finish', input: { summary: 'Nothing scored.' } }]);
+
+    const review = await reviewNow(loaded, deps, { target: reviewTarget('feat') });
+
+    expect(unscored(review)).toEqual(['src/price.js', 'src/tax.js']);
+    expect(reviewMarkdown(review)).toContain('The review is incomplete');
+  });
+
+  it('is incomplete when the assessor scores the base but not the head', async () => {
+    const { repo, loaded, deps } = await setUp();
+    gitIn(repo, 'checkout', '-q', '-b', 'rename', 'main~1');
+    gitIn(repo, 'mv', 'src/price.js', 'src/cost.js');
+    gitIn(repo, 'commit', '-q', '-m', 'rename');
+    gitIn(repo, 'checkout', '-q', 'main');
+    script('assessor', badIsWorse);
+    // Scores src/price.js as it is at the merge base, so the next review reads it from the cache.
+    await reviewNow(loaded, deps, { target: reviewTarget('rename') });
+    script('assessor', [{ tool: 'finish', input: { summary: 'Nothing scored.' } }]);
+
+    const review = await reviewNow(loaded, deps, { target: reviewTarget('feat') });
+
+    expect(review.files.find((f) => f.path === 'src/price.js')?.base).toBe(75);
+    expect(regressed(review)).toBe(false);
+    expect(unscored(review)).toEqual(['src/price.js', 'src/tax.js']);
   });
 });

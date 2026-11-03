@@ -4,5 +4,5 @@ export type { PatrolDeps } from './lib/deps.js';
 export { patrol } from './lib/loop.js';
 export { proofMarkdown } from './lib/proof-text.js';
 export { publish } from './lib/publish.js';
-export { regressed, reviewMarkdown, reviewNow, reviewTarget } from './lib/review.js';
+export { regressed, reviewMarkdown, reviewNow, reviewTarget, unscored } from './lib/review.js';
 export { refactorNow, scoreNow, surveyNow } from './lib/steps.js';
