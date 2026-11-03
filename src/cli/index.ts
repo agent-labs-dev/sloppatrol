@@ -14,6 +14,10 @@ import {
   proofMarkdown,
   publish,
   refactorNow,
+  regressed,
+  reviewMarkdown,
+  reviewNow,
+  reviewTarget,
   scoreNow,
   surveyNow,
 } from '../patrol/index.js';
@@ -145,6 +149,15 @@ async function main(args: string[]): Promise<number> {
       await untilSigint();
       await server.close();
       return EXIT.ok;
+    }
+    case 'review': {
+      const target = positional[0];
+      if (!target)
+        throw new ConfigError('Give a pull request number or URL, or a branch: `sloppatrol review <pr|branch>`.');
+      stopOnSignal(store);
+      const review = await reviewNow(loaded, deps, { target: reviewTarget(target), base: strFlag(flags, 'base') });
+      out(reviewMarkdown(review));
+      return regressed(review) ? EXIT.failed : EXIT.ok;
     }
     case 'status':
       await status(store, out);

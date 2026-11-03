@@ -34,6 +34,7 @@ referenced procedure for a route. The patrol commands below are actual CLI comma
 - `npx sloppatrol`: the patrol, every `patrol.intervalMinutes`.
 - `npx sloppatrol survey`, `npx sloppatrol refactor [id]`, `npx sloppatrol publish`: one step at a time.
 - `npx sloppatrol status`: the opportunities and the refactors.
+- `npx sloppatrol review <pr|branch>`: score only the files a pull request or branch changes, against its merge base. Exit 1 means a file lost 10 points or more.
 
 Set `github.enabled: true` only when the user wants pull requests opened with their `gh` login.
 
