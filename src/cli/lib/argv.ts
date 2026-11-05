@@ -1,3 +1,5 @@
+import { ConfigError } from '../../config/index.js';
+
 export type Argv = {
   command: string;
   positional: string[];
@@ -44,7 +46,10 @@ export function parseArgv(args: string[]): Argv {
       } else flags[name] = true;
     } else positional.push(arg);
   }
-  const command = positional[0] && COMMANDS.has(positional[0]) ? positional.shift()! : 'patrol';
+  const command = positional.shift() ?? 'patrol';
+  if (!COMMANDS.has(command)) {
+    throw new ConfigError(`Unknown command "${command}". Run \`sloppatrol --help\` for supported commands.`);
+  }
   return { command, positional, flags };
 }
 

@@ -33,3 +33,5 @@ Read
 `sloppatrol init --refresh` updates the vendored [project-rules tools](project-rules.md) and keeps a copy you edited.
 
 Add `--cwd <dir>` to run a command in another repo. `sloppatrol --help` shows the usage.
+
+Omitting the command starts the patrol. An unknown command exits 2 with a help hint before loading the repo, starting the dashboard, or running agents. `audit` is a [skill route](project-rules.md), not a CLI command.
