@@ -79,8 +79,10 @@ export async function judge(
     const after = await mutationProof(ctx, { dir: worktree, mutation, sha: baseSha, refactorId: id, branch });
     proof.behaviour.mutation = { ...mutation, ...after };
     await save({ proof });
-    if (!after.caught)
+    if (!after.caught) {
+      await ctx.store.setStatus({ role: 'gate', state: 'done', detail: `Mutation missed on ${branch}` });
       return reject('The tests did not catch the planted bug: they cannot fail where it matters.', verdict, proof);
+    }
     if (gainOf(opportunity.kind) === 'coverage') {
       // New coverage: the same bug must slip past the old tests on main.
       const before = await mutationProof(ctx, {
@@ -96,12 +98,14 @@ export async function judge(
         beforeRunId: before.runId,
       };
       await save({ proof });
-      if (before.caught)
+      if (before.caught) {
+        await ctx.store.setStatus({ role: 'gate', state: 'done', detail: 'Mutation already caught on main' });
         return reject(
           'The old tests already catch the planted bug: the new tests add no proven coverage.',
           verdict,
           proof,
         );
+      }
     }
     await ctx.store.setStatus({ role: 'gate', state: 'done', detail: `Mutation caught on ${branch}` });
   }
@@ -119,13 +123,17 @@ export async function judge(
     proof.behaviour.held = held;
     await save({ proof });
     const lost = held.filter((bug) => bug.caughtBefore && !bug.caughtAfter);
+    await ctx.store.setStatus({
+      role: 'gate',
+      state: 'done',
+      detail: lost.length ? `Planted bugs missed on ${branch}` : `Planted bugs held on ${branch}`,
+    });
     if (lost.length)
       return reject(
         `The tests catch ${lost.length === 1 ? 'a planted bug' : `${lost.length} planted bugs`} on main but not on this change, in ${lost.map((bug) => `\`${bug.file}\``).join(', ')}: the refactor moved code out of their reach.`,
         verdict,
         proof,
       );
-    await ctx.store.setStatus({ role: 'gate', state: 'done', detail: `Planted bugs held on ${branch}` });
   }
 
   if (config.metrics.enabled) {
