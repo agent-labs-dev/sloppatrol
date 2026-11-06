@@ -14,7 +14,7 @@ focus: [src/**]                             # where the surveyor looks (default:
 ignore: [src/generated/**]                  # what no agent may change
 uncheckedTests: [tests/e2e/**]              # tests no check runs: no refactor may change them
 guards: { maxFiles: 12, maxLines: 600 }
-metrics: { enabled: true, panel: 20, tolerance: 0.5, judges: 3, parallel: 1 }   # panel: files newly scored per cycle; parallel: assessor sessions at once
+metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3, parallel: 3 }   # panel: files newly scored per cycle; parallel: assessor sessions at once
 agents:
   surveyor: { minBacklog: 3, maxPerSurvey: 8 }
   refactorer: { maxPerCycle: 1, maxAttempts: 2, timeoutMinutes: 45, cleanupTimeoutMinutes: 15 }
@@ -28,7 +28,7 @@ patrol: { intervalMinutes: 60, pull: origin/main }
 The defaults keep the patrol light, so it can stay on next to your own work on a shared machine:
 
 ```yaml
-metrics: { panel: 20, judges: 3, parallel: 1 }   # 20 new files scored per cycle; one assessor session at a time
+metrics: { panel: 100, judges: 3, parallel: 3 } # 100 new files scored per cycle; three assessor sessions at once
 agents:
   refactorer: { maxPerCycle: 1, maxCheckRuns: 1 } # one refactor per cycle; it runs your checks once before the gate
 patrol:
@@ -43,7 +43,9 @@ patrol:
 
 Every check also has a `timeoutMinutes` (20 by default). The checks run once on each new commit of `patrol.pull`, once when the refactorer asks, and once in the gate; a tests refactor adds one run for its planted bug. Use `patrol.checks` to leave a slow tier out; add its tests to `uncheckedTests` so no refactor changes them.
 
-For the earlier, heavier schedule, set `metrics: { panel: 100, parallel: 3 }`, `agents.refactorer.maxCheckRuns: 20`, and `patrol: { nice: 0, backoff: false, maxCyclesPerDay: 0, maxLoad: 0 }`.
+An assessor session waits on its model, not the CPU: three at once used about 1.2 GB and a fifth of one core in total, scoring about 14 s a file against 46 s for one at a time. On a machine short of memory, set `metrics: { panel: 20, parallel: 1 }`.
+
+For the earlier, heavier schedule, set `agents.refactorer.maxCheckRuns: 20` and `patrol: { nice: 0, backoff: false, maxCyclesPerDay: 0, maxLoad: 0 }`.
 
 Every role also takes `maxSteps`, `timeoutMinutes` and `budgetUsd` (model runtime). Pull requests open with your `gh` login.
 

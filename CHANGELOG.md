@@ -14,13 +14,11 @@ Sloppatrol is a patrol again, and only a patrol: a surveyor, a refactorer, a cod
 
 `sloppatrol review <pr|branch>` stays.
 
-The patrol is light by default, so it can stay on across many repos on a shared machine:
+The patrol is light by default, so it can stay on across many repos on a shared machine. Scoring keeps its pace: 100 new files a cycle, three assessor sessions at once, since they wait on the model rather than the CPU.
 
-- One agent process at a time: the three assessors of a proof, and the scoring sessions, run one after another (`metrics.parallel`, was 3).
 - Sloppatrol and every check and agent it starts run at niceness 10, and on Linux at I/O priority best-effort 7 (`patrol.nice`, 0 for normal priority).
 - `patrol.checks` names a fast check set for the patrol. The refactorer runs the checks at most once per attempt before the gate (`agents.refactorer.maxCheckRuns`).
 - A cycle waits while the 1-minute load average is above the CPU count (`patrol.maxLoad`), and at most 6 cycles start in any 24 hours (`patrol.maxCyclesPerDay`). After a cycle that finds nothing, the wait doubles, up to a day (`patrol.backoff`, `patrol.maxIntervalMinutes`).
-- Each cycle scores 20 new files, not 100 (`metrics.panel`).
 - **Breaking:** `sloppatrol` no longer serves the dashboard. Add `--dashboard`, or run `sloppatrol dashboard`.
 - `sloppatrol --once` runs one cycle and exits, and skips the cycle while the machine is busy or the daily cap is reached: it suits a scheduled CI job.
 

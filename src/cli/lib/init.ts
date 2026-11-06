@@ -77,7 +77,7 @@ agents:
   refactorer: { maxPerCycle: 1, maxAttempts: 2 }
   reviewer: { enabled: true }
 # Quality metrics an assessor scores blind; each refactor must raise its target metric.
-metrics: { enabled: true, panel: 20, tolerance: 0.5, judges: 3, parallel: 1 }
+metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3, parallel: 3 }
 github: { enabled: false, maxOpen: 3 }
 # How hard the patrol works: see docs/configuration.md. maxLoad defaults to the CPU count.
 patrol: { intervalMinutes: 60, pull: origin/main, nice: 10, backoff: true, maxCyclesPerDay: 6 }
