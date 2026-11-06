@@ -146,6 +146,11 @@ export const configSchema = z.object({
       intervalMinutes: z.number().positive().default(60),
       /** The ref to patrol. A `remote/branch` is fetched first. */
       pull: z.string().default('origin/main'),
+      /**
+       * The CPU niceness Sloppatrol and every process it starts run at (and on
+       * Linux, the lowest best-effort I/O priority). 0 runs them at normal priority.
+       */
+      nice: z.number().int().min(0).max(19).default(10),
     })
     .default({}),
 });

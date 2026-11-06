@@ -22,7 +22,7 @@ import {
   surveyNow,
   unscored,
 } from '../patrol/index.js';
-import { stopAll } from '../processes/index.js';
+import { lowerPriority, stopAll } from '../processes/index.js';
 import { scorecardMarkdown } from '../roles/index.js';
 import { Store } from '../store/index.js';
 import { intFlag, parseArgv, strFlag } from './lib/argv.js';
@@ -105,6 +105,7 @@ async function main(args: string[]): Promise<number> {
   }
   const { loaded, deps } = await wire(cwd);
   const { store } = deps;
+  lowerPriority(loaded.config.patrol.nice, log);
   switch (command) {
     case 'doctor':
       return (await doctor(loaded, out)) ? EXIT.ok : EXIT.config;
