@@ -1,8 +1,7 @@
 export const USAGE = `sloppatrol: a team of agents that makes your code cleaner, one verified refactor at a time.
 
 Start
-  sloppatrol init              Create .sloppatrol/ with a guess at your checks, and vendor the rules gate
-  sloppatrol init --refresh    Update the vendored gate and AGENTS.md check; keep local edits
+  sloppatrol init              Create .sloppatrol/ with a guess at your checks
   sloppatrol doctor            Show the config, the agent each role runs on, and what is missing
 
 Run

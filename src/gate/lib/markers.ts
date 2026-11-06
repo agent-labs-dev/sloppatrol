@@ -8,7 +8,6 @@ export const SUPPRESSIONS: { name: string; pattern: RegExp }[] = [
     pattern:
       /eslint-disable|biome-ignore|\/\/\s*nolint|swiftlint:disable|# noqa|@SuppressWarnings|@Suppress\(|#!?\[allow\(/,
   },
-  { name: 'project-rules marker', pattern: /\bsloppatrol: [a-z0-9][\w-]* - / },
   { name: 'type suppression', pattern: /@ts-ignore|@ts-expect-error|@ts-nocheck|# type: ignore|# pyright: ignore/ },
   { name: 'type escape', pattern: /\bas any\b|\bas unknown as\b|:\s*any\b/ },
   { name: 'coverage exclusion', pattern: /istanbul ignore|c8 ignore|v8 ignore|# pragma: no cover/ },

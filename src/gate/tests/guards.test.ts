@@ -68,23 +68,13 @@ describe('the guards', () => {
     ]);
   });
 
-  it('freeze manifests, tool configs, agent rules and ignored paths', async () => {
-    const { dir, base, write } = make({
-      'package.json': '{}\n',
-      'tsconfig.json': '{}\n',
-      'gen/api.ts': 'x\n',
-      'AGENTS.md': '# A\n',
-      '.agents/skills/sloppatrol-project/SKILL.md': '# S\n',
-    });
+  it('freeze manifests, tool configs and ignored paths', async () => {
+    const { dir, base, write } = make({ 'package.json': '{}\n', 'tsconfig.json': '{}\n', 'gen/api.ts': 'x\n' });
     write('package.json', '{ "dependencies": { "left-pad": "1" } }\n');
     write('tsconfig.json', '{ "compilerOptions": { "strict": false } }\n');
     write('gen/api.ts', 'y\n');
-    write('AGENTS.md', '# B\n');
-    write('.agents/skills/sloppatrol-project/SKILL.md', '# T\n');
     const { findings } = await inspectChange(dir, base, rules({ ignore: ['gen/**'] }));
     expect(findings.filter((f) => f.guard === 'frozen').map((f) => f.file)).toEqual([
-      '.agents/skills/sloppatrol-project/SKILL.md',
-      'AGENTS.md',
       'gen/api.ts',
       'package.json',
       'tsconfig.json',
@@ -99,10 +89,6 @@ describe('the guards', () => {
     write('src/b.ts', '// @ts-expect-error legacy\nconst y = z as any;\n');
     expect((await inspectChange(dir, base, rules())).findings).toEqual([
       { guard: 'suppression', file: 'src/b.ts', detail: 'Adds a type escape.' },
-    ]);
-    write('src/b.ts', '// @ts-expect-error legacy\nx // sloppatrol: no-any - generated\n');
-    expect((await inspectChange(dir, base, rules())).findings).toEqual([
-      { guard: 'suppression', file: 'src/b.ts', detail: 'Adds a project-rules marker.' },
     ]);
   });
 

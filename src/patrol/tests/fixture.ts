@@ -2,7 +2,6 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { vendor } from '../../project-rules/index.js';
 
 const FAKE_AGENT = resolve(import.meta.dirname, 'fake-agent.mjs');
 
@@ -52,6 +51,7 @@ export function fixtureRepo(github = true): string {
   writeFileSync(join(repo, 'src/price.js'), PRICE);
   writeFileSync(join(repo, 'test/price.test.js'), TEST);
   writeFileSync(join(repo, '.gitignore'), '.sloppatrol/runs/\n');
+  const agent = (role: string) => `{ runtime: cli, command: "node ${FAKE_AGENT} {mcp} ${role}" }`;
   writeFileSync(
     join(repo, '.sloppatrol/sloppatrol.yml'),
     `project: { name: shop }
@@ -60,10 +60,10 @@ checks:
     run: node --test
     tests: true
 agents:
-  surveyor: { use: ${agentCommand('surveyor')}, timeoutMinutes: 2 }
-  refactorer: { use: ${agentCommand('refactorer')}, timeoutMinutes: 2 }
-  assessor: { use: ${agentCommand('assessor')}, timeoutMinutes: 2 }
-  reviewer: { use: ${agentCommand('reviewer')}, timeoutMinutes: 2 }
+  surveyor: { use: ${agent('surveyor')}, timeoutMinutes: 2 }
+  refactorer: { use: ${agent('refactorer')}, timeoutMinutes: 2 }
+  assessor: { use: ${agent('assessor')}, timeoutMinutes: 2 }
+  reviewer: { use: ${agent('reviewer')}, timeoutMinutes: 2 }
 github: { enabled: ${github} }
 patrol: { pull: main }
 `,
@@ -93,33 +93,4 @@ export function agentCommand(role: string): string {
 
 export function read(repo: string, path: string): string {
   return readFileSync(join(repo, path), 'utf8');
-}
-
-/** Vendors the project-rules tools into the fixture and commits a ledger; the ledger tool gives each item its id. */
-export async function withLedger(repo: string, items: { lens: string; file: string; quote: string; status: string }[]) {
-  await vendor(join(repo, '.sloppatrol'));
-  const full = items.map(({ status, ...item }, i) => ({
-    ...item,
-    id: String(i).padStart(10, '0'),
-    what: 'A defect.',
-    why: 'The evidence.',
-    confidence: 'high',
-    status,
-    reason: status === 'confirmed' ? '' : 'The owner chose to keep it.',
-    first_seen: '2026-11-02',
-    updated: '2026-11-02',
-    ...(status === 'confirmed' ? { guard: 'lens-only: the lens catches the next one' } : {}),
-  }));
-  const path = join(repo, '.sloppatrol/ledger.json');
-  writeFileSync(path, `${JSON.stringify({ schema_version: 1, items: full })}\n`);
-  execFileSync('python3', [
-    resolve(import.meta.dirname, '../../../skills/sloppatrol/scripts/ledger.py'),
-    '--root',
-    repo,
-    'rekey',
-  ]);
-  gitIn(repo, 'add', '-A');
-  gitIn(repo, 'commit', '-q', '-m', 'ledger');
-  const rekeyed = JSON.parse(readFileSync(path, 'utf8')) as { items: { id: string; lens: string }[] };
-  return items.map((item) => rekeyed.items.find((r) => r.lens === item.lens)?.id ?? '');
 }

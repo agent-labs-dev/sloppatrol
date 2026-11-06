@@ -6,8 +6,6 @@ import { configSchema, type SloppatrolConfig } from './schema.js';
 
 export const CONFIG_DIR = '.sloppatrol';
 export const CONFIG_FILE = 'sloppatrol.yml';
-/** The vendored project-rules gate, in the config folder. */
-const GATE = 'gate.py';
 
 /** A problem in the user's config or environment. The CLI exits with code 2. */
 export class ConfigError extends Error {
@@ -45,19 +43,5 @@ export async function loadConfig(cwd: string): Promise<LoadedConfig> {
     const issues = parsed.error.issues.map((issue) => `${file}: ${issue.path.join('.') || '(root)'}: ${issue.message}`);
     throw new ConfigError(issues.join('\n'));
   }
-  return { config: withProjectRules(parsed.data, dir), dir, source: resolve(dirname(dir), parsed.data.project.source) };
-}
-
-/**
- * The repo's own rules gate (`.sloppatrol/gate.py`) is one more check, on the
- * base and on every refactor, unless a check already runs it. Its base is the
- * patrolled ref, so a changed-scope rule sees no change on the base commit and
- * exactly the refactor on a refactor; every other rule scans the whole tree.
- */
-function withProjectRules(config: SloppatrolConfig, dir: string): SloppatrolConfig {
-  if (!existsSync(join(dir, GATE)) || config.checks.some((c) => c.run.includes(`${CONFIG_DIR}/${GATE}`))) return config;
-  // The base checkout may predate the gate: then neither side runs it, so the two still compare.
-  const gate = `"$(git rev-parse --show-toplevel)/${CONFIG_DIR}/${GATE}"`;
-  const run = `[ ! -f ${gate} ] || python3 ${gate} --base '${config.patrol.pull.replaceAll("'", "'\\''")}'`;
-  return { ...config, checks: [...config.checks, { name: 'project-rules', run, timeoutMinutes: 20, tests: false }] };
+  return { config: parsed.data, dir, source: resolve(dirname(dir), parsed.data.project.source) };
 }
