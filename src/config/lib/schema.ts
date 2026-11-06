@@ -125,8 +125,10 @@ export const configSchema = z.object({
       panel: z.number().int().positive().default(100),
       /** How far a metric that is not a target may drop before the refactor is rejected, for judge noise. */
       tolerance: z.number().nonnegative().default(0.5),
-      /** Independent assessor sessions per proof, run at once; each score is their mean. */
+      /** Independent assessor sessions per proof; each score is their mean. */
       judges: z.number().int().positive().default(3),
+      /** Assessor sessions that run at once, for the scorecard and for the judges of a proof. */
+      parallel: z.number().int().positive().default(1),
     })
     .default({}),
   github: z

@@ -16,6 +16,7 @@ import { git, tryGit } from '../../git/index.js';
 import { matchesAny } from '../../globs/index.js';
 import { contentHash, meanScores, measure, RUBRIC_VERSION, sumSignals, toPercent } from '../../metrics/index.js';
 import { type AssessedScores, type AssessUnit, assess, type RoleContext } from '../../roles/index.js';
+import { inPool } from './pool.js';
 
 /**
  * Applies the mutation to the source in `dir`, runs the test checks, and
@@ -135,11 +136,13 @@ export async function improvementProof(
     })),
   );
   const units = blindUnits(files, isTest);
-  // A panel of independent judges, at once: each score is their mean, so one
-  // judge's swing of a level cannot decide the proof alone.
-  const panel = await Promise.all(
-    Array.from({ length: config.metrics.judges }, () =>
-      assess(ctx, { units, subject: `refactor:${input.refactorId}`, workdir: input.worktree, blind: true }),
+  // A panel of independent judges, `metrics.parallel` at a time: each score is
+  // their mean, so one judge's swing of a level cannot decide the proof alone.
+  const panel = await inPool(
+    config.metrics.parallel,
+    Array.from(
+      { length: config.metrics.judges },
+      () => () => assess(ctx, { units, subject: `refactor:${input.refactorId}`, workdir: input.worktree, blind: true }),
     ),
   );
   const scored = meanOfJudges(

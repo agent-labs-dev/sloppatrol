@@ -5,13 +5,12 @@ import type { Scorecard, UnitScores } from '../../domain/index.js';
 import { matchesAny } from '../../globs/index.js';
 import { contentHash, meanScores, measure, RUBRIC_VERSION } from '../../metrics/index.js';
 import { type AssessedScores, type AssessUnit, assess, type RoleContext } from '../../roles/index.js';
+import { inPool } from './pool.js';
 
 /** About this many lines per assessor session: a large file gets a session of its own. */
 const BATCH_LINES = 2500;
 /** Tool calls a session needs besides the two per file (`get_unit`, `score_unit`): `list_units`, `finish`, and room to spare. */
 const SESSION_CALLS = 6;
-/** Sessions that run at once. */
-const PARALLEL = 3;
 
 type File = { path: string; text: string; hash: string; isTest: boolean };
 
@@ -60,22 +59,20 @@ function batches<T extends { text: string }>(units: T[], maxUnits: number): T[][
   return groups;
 }
 
-/** Scores the units in batches, `PARALLEL` sessions at a time, so no session has to hold them all. */
+/** Scores the units in batches, `metrics.parallel` sessions at a time, so no session has to hold them all. */
 async function assessInBatches(
   ctx: RoleContext,
   units: AssessUnit[],
   input: { dir: string; subject: string },
 ): Promise<AssessedScores> {
+  const { config } = ctx.loaded;
+  const maxUnits = Math.max(1, Math.floor((config.agents.assessor.maxSteps - SESSION_CALLS) / 2));
+  const sessions = batches(units, maxUnits).map(
+    (batch) => () => assess(ctx, { units: batch, subject: input.subject, workdir: input.dir, blind: false }),
+  );
   const all: AssessedScores = new Map();
-  const maxUnits = Math.max(1, Math.floor((ctx.loaded.config.agents.assessor.maxSteps - SESSION_CALLS) / 2));
-  const queue = batches(units, maxUnits);
-  const worker = async () => {
-    for (let batch = queue.shift(); batch; batch = queue.shift()) {
-      const scored = await assess(ctx, { units: batch, subject: input.subject, workdir: input.dir, blind: false });
-      for (const [label, scores] of scored) all.set(label, scores);
-    }
-  };
-  await Promise.all(Array.from({ length: PARALLEL }, worker));
+  for (const scored of await inPool(config.metrics.parallel, sessions))
+    for (const [label, scores] of scored) all.set(label, scores);
   return all;
 }
 
