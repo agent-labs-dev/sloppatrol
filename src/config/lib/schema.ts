@@ -81,6 +81,16 @@ export const configSchema = z
         maxLines: z.number().int().positive().default(600),
       })
       .default({}),
+    mutation: z
+      .object({
+        /**
+         * Bugs planted on the lines a source refactor kept. Each costs one test
+         * run on main, and one more on the change when main's tests catch it.
+         * 0 turns the proof off.
+         */
+        sourceBugs: z.number().int().nonnegative().default(2),
+      })
+      .default({}),
     agents: z
       .object({
         surveyor: z

@@ -11,6 +11,8 @@ export type Metric = {
   levels: [string, string, string, string, string];
   /** Concrete things to count against the file. */
   lookFor: string[];
+  /** Look-alikes not to count against the file: the false positives a judge reaches for first. */
+  skip: string[];
 };
 
 /**
@@ -37,6 +39,12 @@ export const METRICS: Metric[] = [
       'flag parameters',
       'long parameter lists',
       'repeated switches on the same type',
+      'hand-rolled code the standard library or an existing dependency already does',
+    ],
+    skip: [
+      'a long function that does one coherent thing (a data table, a flat list of simple cases)',
+      'nesting the problem itself needs, such as a recursive tree walk',
+      'a long parameter list whose values mean nothing as a group',
     ],
   },
   {
@@ -57,6 +65,13 @@ export const METRICS: Metric[] = [
       'deep imports of another module',
       'duplicated owners of one concept',
     ],
+    skip: [
+      'size alone: a long file with one responsibility, a generated file, a manifest',
+      'a seam something really varies across: two adapters, or a boundary a framework or public API needs',
+      'a thin wrapper that enforces one policy (auth, logging, caching)',
+      'a shared format with one owner that both sides import',
+      'tests importing their own module’s internals where the repo allows it',
+    ],
   },
   {
     id: 'injection',
@@ -76,6 +91,12 @@ export const METRICS: Metric[] = [
       'env reads below the root',
       'clock or random in logic',
       'concrete types where a port fits',
+    ],
+    skip: [
+      'the composition root creating the real adapters',
+      'a thin effect layer at the edge whose decisions sit in pure functions',
+      'configuration read once at startup and passed down',
+      'a dependency a test already replaces through a seam, such as an optional parameter that defaults to the real one',
     ],
   },
   {
@@ -98,6 +119,11 @@ export const METRICS: Metric[] = [
       'clock, randomness or env read inside a calculation',
       'loops that build results by mutation where a map or fold returns them',
     ],
+    skip: [
+      'effects in a thin edge layer whose decisions sit in pure functions',
+      'state with one owner that changes only behind its interface',
+      'effects a framework lifecycle requires by contract',
+    ],
   },
   {
     id: 'tests',
@@ -118,6 +144,12 @@ export const METRICS: Metric[] = [
       'loose assertions',
       'sleeps and order dependence',
     ],
+    skip: [
+      'a regression test pinned to a real, shipped bug',
+      'a contract test of public behaviour, errors, security or concurrency',
+      'a mock of a third-party boundary, not of the team’s own code',
+      'thin tests where the runtime is hard to test: judge them against what is feasible there',
+    ],
   },
   {
     id: 'clarity',
@@ -136,6 +168,16 @@ export const METRICS: Metric[] = [
       'dead or commented-out code',
       'lineage names (`v2`, `legacy`, `new`)',
       'one-use abstractions',
+      'checks and handlers for cases the contracts rule out',
+      'debug prints, unowned TODOs and placeholder names',
+    ],
+    skip: [
+      'comments that say why: a constraint, a workaround and its cause, an invariant, a link to a spec or bug',
+      'public API docs, licence headers, directives and pragmas',
+      'text a model reads (prompts, tool and schema descriptions): it is behaviour',
+      'a TODO that names an issue or a condition',
+      'logging that is part of the program’s output',
+      'standard framework names, short loop variables and the codebase’s own abbreviations',
     ],
   },
   {
@@ -155,9 +197,15 @@ export const METRICS: Metric[] = [
       'untyped or `any` values crossing an interface',
       'strings or booleans that select behaviour',
       'non-exhaustive matches on a union',
-      'two patterns for one job',
+      'two patterns for one job, such as an old and a new API side by side',
       'invariants kept only by a comment',
       'import-time side effects',
+    ],
+    skip: [
+      'string literals at a wire boundary, turned into a typed form once there (persisted keys, config keys, vendor payloads)',
+      'open sets of values, such as user-given names or ids from another system',
+      'dynamic framework code where typing is impractical',
+      'a constants table the language uses in place of enums, when callers go through it',
     ],
   },
 ];

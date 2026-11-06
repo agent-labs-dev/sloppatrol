@@ -24,6 +24,11 @@ export type Proof = {
       caughtBefore?: boolean;
       beforeRunId?: string;
     };
+    /**
+     * A source refactor: bugs planted on lines it kept, on main and on the
+     * change. Each one the tests caught on main they must catch on the change.
+     */
+    held?: (Mutation & { caughtBefore: boolean; beforeRunId: string; caughtAfter?: boolean; afterRunId?: string })[];
   };
   improvement?: Improvement;
   /** The repo's own rules that applied, from the reviewer. */
