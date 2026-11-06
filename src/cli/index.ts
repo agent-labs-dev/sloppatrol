@@ -192,9 +192,9 @@ async function main(args: string[]): Promise<number> {
     }
     default: {
       const server =
-        flags.dashboard === false
-          ? undefined
-          : await dashboard(store, loaded.config.project.name, intFlag(flags, 'port'));
+        flags.dashboard === true
+          ? await dashboard(store, loaded.config.project.name, intFlag(flags, 'port'))
+          : undefined;
       if (server) log(`Sloppatrol dashboard: ${server.url}`);
       stopOnSignal(store);
       try {
