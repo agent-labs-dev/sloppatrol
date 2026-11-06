@@ -254,6 +254,36 @@ describe('a patrol', () => {
     expect(await baseRuns()).toBe(2);
   });
 
+  it('runs only the checks patrol.checks names, and the refactorer only maxCheckRuns times', async () => {
+    const { repo, deps } = await setUp(false);
+    const file = join(repo, '.sloppatrol/sloppatrol.yml');
+    const yaml = readFileSync(file, 'utf8')
+      .replace('checks:\n', 'checks:\n  - { name: slow, run: exit 1 }\n')
+      .replace('patrol: { pull: main }', 'patrol: { pull: main, checks: [test] }');
+    writeFileSync(file, yaml);
+    await deps.store.saveOpportunity(opportunity());
+    script('refactorer', [
+      { edit: { file: 'src/price.js', from: LOOP, to: REDUCE } },
+      { tool: 'run_checks' },
+      { tool: 'run_checks' },
+      { tool: 'finish', input: { summary: 'total() now uses reduce.' } },
+    ]);
+    script('assessor', reduceIsBetter);
+    script('reviewer', approve);
+
+    const refactor = await refactorNow(await loadConfig(repo), deps);
+
+    expect(refactor.status).toBe('verified');
+    const runs = await deps.store.listCheckRuns();
+    expect(runs.map((r) => [r.purpose, r.results.map((c) => c.name)])).toEqual([
+      ['base', ['test']],
+      ['refactorer', ['test']],
+      ['gate', ['test']],
+    ]);
+    writeFileSync(file, yaml.replace('checks: [test]', 'checks: [fast]'));
+    await expect(loadConfig(repo)).rejects.toThrow('patrol.checks.0: no check is named fast');
+  });
+
   it('names the branch without the type prefix, and never attempts a verified opportunity again by hand', async () => {
     const { loaded, deps } = await setUp(false);
     await deps.store.saveOpportunity(opportunity({ title: 'refactor(price): compute the total with reduce' }));

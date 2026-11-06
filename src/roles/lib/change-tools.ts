@@ -38,6 +38,7 @@ export function changeTools(ctx: RoleContext, work: Work) {
   const rules = guardRulesFor(config, work.opportunity.side);
   const target = { purpose: 'refactorer' as const, sha: baseSha, refactorId: work.refactorId, branch: work.branch };
   let checks: Promise<CheckRun> | undefined;
+  let runs = 0;
   let mutation: Mutation | undefined;
 
   const guardsTool = tool(
@@ -59,6 +60,12 @@ export function changeTools(ctx: RoleContext, work: Work) {
     {},
     [],
     async () => {
+      const limit = config.agents.refactorer.maxCheckRuns;
+      if (!checks && runs >= limit)
+        return {
+          text: `You have used the ${limit} check run(s) of this attempt. Finish: the gate runs the checks on your commit.`,
+        };
+      if (!checks) runs++;
       checks ??= runRecordedChecks(ctx.store, target, config.checks, worktree, ctx.log);
       const run = await within(checks, WAIT_MS);
       if (!run) return { text: 'The checks still run. Call run_checks again to wait for the result.' };

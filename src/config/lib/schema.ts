@@ -43,117 +43,136 @@ const checkSchema = z.object({
   tests: z.boolean().default(false),
 });
 
-export const configSchema = z.object({
-  version: z.literal(1).default(1),
-  project: z.object({ name: z.string().default('app'), source: z.string().default('.') }).default({}),
-  /** The runtime of every role, unless a role sets its own `use`. */
-  agent: runtimeSchema.default('auto'),
-  /** Runs once in each fresh checkout or worktree, before the checks: install, codegen. */
-  prepare: z.array(z.string()).default([]),
-  /**
-   * Mechanical tidy-up commands run in the refactorer's worktree after its
-   * session and before the gate: remove the imports and helpers an edit left
-   * unused, format, sort. They run on every attempt, so residue from a session
-   * that ran out of time never reaches a check. A failing command is logged
-   * and left to the checks: cleanup never decides the verdict.
-   */
-  cleanup: z.array(z.string()).default([]),
-  /**
-   * The oracle. Each check must pass on the patrolled commit before
-   * Sloppatrol starts work, and again on every refactor.
-   */
-  checks: z.array(checkSchema).min(1, 'add at least one check: the tests'),
-  /** Which files are tests. A refactor changes tests or source, never both. */
-  tests: z.array(z.string()).default([...DEFAULT_TEST_PATTERNS]),
-  /**
-   * Test files that no check runs, e.g. an integration tier that needs
-   * services. Nothing would prove a change to them, so no refactor may make one.
-   */
-  uncheckedTests: z.array(z.string()).default([]),
-  /** Where the surveyor looks. Empty means the whole repository. */
-  focus: z.array(z.string()).default([]),
-  /** Files no agent may change: generated code, vendored code, migrations. */
-  ignore: z.array(z.string()).default([]),
-  guards: z
-    .object({
-      maxFiles: z.number().int().positive().default(12),
-      maxLines: z.number().int().positive().default(600),
-    })
-    .default({}),
-  agents: z
-    .object({
-      surveyor: z
-        .object({
-          ...limits,
-          enabled: z.boolean().default(true),
-          /** Survey again when fewer open opportunities than this remain. */
-          minBacklog: z.number().int().nonnegative().default(3),
-          /** The most opportunities one survey records. */
-          maxPerSurvey: z.number().int().positive().default(8),
-        })
-        .default({}),
-      refactorer: z
-        .object({
-          ...limits,
-          enabled: z.boolean().default(true),
-          maxPerCycle: z.number().int().positive().default(1),
-          /** Attempts per opportunity before it is exhausted. */
-          maxAttempts: z.number().int().positive().default(2),
-          /**
-           * A session that stops at its timeout hands its worktree to one
-           * bounded completion session, which finishes the change and tidies
-           * what it left unused instead of letting the gate reject a
-           * half-finished edit. These are that session's limits.
-           */
-          cleanupTimeoutMinutes: z.number().positive().default(15),
-          cleanupMaxSteps: z.number().int().positive().default(30),
-        })
-        .default({}),
-      /** Scores files against the metrics rubric, for the scorecard and for each refactor's proof. */
-      assessor: z.object({ ...limits }).default({}),
-      reviewer: z.object({ ...limits, enabled: z.boolean().default(true) }).default({}),
-    })
-    .default({}),
-  /** The LLM-judged quality metrics (ADR 0004). */
-  metrics: z
-    .object({
-      enabled: z.boolean().default(true),
-      /**
-       * Files the assessor scores per cycle that have no valid score yet: the
-       * most changed first, then the largest. Coverage grows until every file is scored.
-       */
-      panel: z.number().int().positive().default(20),
-      /** How far a metric that is not a target may drop before the refactor is rejected, for judge noise. */
-      tolerance: z.number().nonnegative().default(0.5),
-      /** Independent assessor sessions per proof; each score is their mean. */
-      judges: z.number().int().positive().default(3),
-      /** Assessor sessions that run at once, for the scorecard and for the judges of a proof. */
-      parallel: z.number().int().positive().default(1),
-    })
-    .default({}),
-  github: z
-    .object({
-      enabled: z.boolean().default(false),
-      repo: z.string().optional(),
-      labels: z.array(z.string()).default(['sloppatrol']),
-      draft: z.boolean().default(false),
-      /** Sloppatrol waits while this many of its pull requests are open. */
-      maxOpen: z.number().int().positive().default(3),
-    })
-    .default({}),
-  patrol: z
-    .object({
-      intervalMinutes: z.number().positive().default(60),
-      /** The ref to patrol. A `remote/branch` is fetched first. */
-      pull: z.string().default('origin/main'),
-      /**
-       * The CPU niceness Sloppatrol and every process it starts run at (and on
-       * Linux, the lowest best-effort I/O priority). 0 runs them at normal priority.
-       */
-      nice: z.number().int().min(0).max(19).default(10),
-    })
-    .default({}),
-});
+export const configSchema = z
+  .object({
+    version: z.literal(1).default(1),
+    project: z.object({ name: z.string().default('app'), source: z.string().default('.') }).default({}),
+    /** The runtime of every role, unless a role sets its own `use`. */
+    agent: runtimeSchema.default('auto'),
+    /** Runs once in each fresh checkout or worktree, before the checks: install, codegen. */
+    prepare: z.array(z.string()).default([]),
+    /**
+     * Mechanical tidy-up commands run in the refactorer's worktree after its
+     * session and before the gate: remove the imports and helpers an edit left
+     * unused, format, sort. They run on every attempt, so residue from a session
+     * that ran out of time never reaches a check. A failing command is logged
+     * and left to the checks: cleanup never decides the verdict.
+     */
+    cleanup: z.array(z.string()).default([]),
+    /**
+     * The oracle. Each check must pass on the patrolled commit before
+     * Sloppatrol starts work, and again on every refactor.
+     */
+    checks: z.array(checkSchema).min(1, 'add at least one check: the tests'),
+    /** Which files are tests. A refactor changes tests or source, never both. */
+    tests: z.array(z.string()).default([...DEFAULT_TEST_PATTERNS]),
+    /**
+     * Test files that no check runs, e.g. an integration tier that needs
+     * services. Nothing would prove a change to them, so no refactor may make one.
+     */
+    uncheckedTests: z.array(z.string()).default([]),
+    /** Where the surveyor looks. Empty means the whole repository. */
+    focus: z.array(z.string()).default([]),
+    /** Files no agent may change: generated code, vendored code, migrations. */
+    ignore: z.array(z.string()).default([]),
+    guards: z
+      .object({
+        maxFiles: z.number().int().positive().default(12),
+        maxLines: z.number().int().positive().default(600),
+      })
+      .default({}),
+    agents: z
+      .object({
+        surveyor: z
+          .object({
+            ...limits,
+            enabled: z.boolean().default(true),
+            /** Survey again when fewer open opportunities than this remain. */
+            minBacklog: z.number().int().nonnegative().default(3),
+            /** The most opportunities one survey records. */
+            maxPerSurvey: z.number().int().positive().default(8),
+          })
+          .default({}),
+        refactorer: z
+          .object({
+            ...limits,
+            enabled: z.boolean().default(true),
+            maxPerCycle: z.number().int().positive().default(1),
+            /** Attempts per opportunity before it is exhausted. */
+            maxAttempts: z.number().int().positive().default(2),
+            /** Times one attempt may run the checks with run_checks. The gate runs them again on the commit. */
+            maxCheckRuns: z.number().int().positive().default(1),
+            /**
+             * A session that stops at its timeout hands its worktree to one
+             * bounded completion session, which finishes the change and tidies
+             * what it left unused instead of letting the gate reject a
+             * half-finished edit. These are that session's limits.
+             */
+            cleanupTimeoutMinutes: z.number().positive().default(15),
+            cleanupMaxSteps: z.number().int().positive().default(30),
+          })
+          .default({}),
+        /** Scores files against the metrics rubric, for the scorecard and for each refactor's proof. */
+        assessor: z.object({ ...limits }).default({}),
+        reviewer: z.object({ ...limits, enabled: z.boolean().default(true) }).default({}),
+      })
+      .default({}),
+    /** The LLM-judged quality metrics (ADR 0004). */
+    metrics: z
+      .object({
+        enabled: z.boolean().default(true),
+        /**
+         * Files the assessor scores per cycle that have no valid score yet: the
+         * most changed first, then the largest. Coverage grows until every file is scored.
+         */
+        panel: z.number().int().positive().default(20),
+        /** How far a metric that is not a target may drop before the refactor is rejected, for judge noise. */
+        tolerance: z.number().nonnegative().default(0.5),
+        /** Independent assessor sessions per proof; each score is their mean. */
+        judges: z.number().int().positive().default(3),
+        /** Assessor sessions that run at once, for the scorecard and for the judges of a proof. */
+        parallel: z.number().int().positive().default(1),
+      })
+      .default({}),
+    github: z
+      .object({
+        enabled: z.boolean().default(false),
+        repo: z.string().optional(),
+        labels: z.array(z.string()).default(['sloppatrol']),
+        draft: z.boolean().default(false),
+        /** Sloppatrol waits while this many of its pull requests are open. */
+        maxOpen: z.number().int().positive().default(3),
+      })
+      .default({}),
+    patrol: z
+      .object({
+        intervalMinutes: z.number().positive().default(60),
+        /** The ref to patrol. A `remote/branch` is fetched first. */
+        pull: z.string().default('origin/main'),
+        /**
+         * The CPU niceness Sloppatrol and every process it starts run at (and on
+         * Linux, the lowest best-effort I/O priority). 0 runs them at normal priority.
+         */
+        nice: z.number().int().min(0).max(19).default(10),
+        /**
+         * The names of the checks the patrol runs, e.g. a fast set without the
+         * slow integration tier. Empty runs every check.
+         */
+        checks: z.array(z.string()).default([]),
+      })
+      .default({}),
+  })
+  .superRefine((config, issues) => {
+    const names = new Set(config.checks.map((c) => c.name));
+    for (const [index, name] of config.patrol.checks.entries())
+      if (!names.has(name))
+        issues.addIssue({ code: 'custom', path: ['patrol', 'checks', index], message: `no check is named ${name}` });
+  })
+  // Every consumer reads `checks`, so it holds only the checks the patrol runs.
+  .transform((config) => {
+    const picked = new Set(config.patrol.checks);
+    return picked.size ? { ...config, checks: config.checks.filter((c) => picked.has(c.name)) } : config;
+  });
 
 export type SloppatrolConfig = z.infer<typeof configSchema>;
 export const CLI_AGENT_NAMES: readonly string[] = CLI_AGENTS;

@@ -34,7 +34,7 @@ How to work:
 2. Plan the smallest change that delivers the opportunity. Follow the playbook's safe moves: one mechanical step at a time, every caller updated in the same change, no compatibility wrappers left behind.
 3. Edit the files. Follow the repo's own style and conventions.
 4. Call check_guards. Fix every finding: a finding rejects the refactor, and nobody can overrule it.
-5. Call run_checks. It runs the repo's own checks. If one fails, fix your change; never weaken a check or a test.
+5. Call run_checks once your change is complete: it runs the repo's own checks, and an attempt has few runs. If one fails, fix your change; never weaken a check or a test.
 6. Call finish with a summary for the pull request: what changed, why it is better, and why the behaviour is the same.
 
 Hard rules:
@@ -50,7 +50,7 @@ export const REFACTORER_COMPLETE = `Your previous session on this change ran out
 Do not start anything new. Finish the change you began, so it is complete and consistent:
 1. Call git_diff and check_guards to see exactly what you have so far.
 2. Complete the edit: wire up every renamed or moved symbol, finish every half-changed caller, and remove the imports, helpers and comments your change left unused.
-3. Call run_checks. Fix what fails, then call finish with the pull request summary.
+3. Call run_checks if this attempt has a run left. Fix what fails, then call finish with the pull request summary.
 If the change cannot be made safe and complete, restore the worktree (\`git checkout -- .\`), and call finish with the reason you changed nothing.`;
 
 export const REVIEWER = `You are the reviewer of Sloppatrol, a team of agents that makes a codebase cleaner without ever changing what it does.
