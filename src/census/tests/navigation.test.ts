@@ -58,6 +58,7 @@ describe('the navigation pre-pass', () => {
         'export function both(id: string) { return db.get(id) && db.put(id); }',
         'export function fixed() { return db.get("all"); }',
         'export function half(id: string, limit: number) { return db.get(id); }',
+        'export function next(id: number) { return db.get(id + 1); }',
         'class Repo {',
         '  find(id: string): Row { return this.db.get(id); }',
         '  constructor(id: string) { return init(id); }',
@@ -75,15 +76,16 @@ describe('the navigation pre-pass', () => {
         '    return first(key)',
         '    print(key)',
       ].join('\n'),
-      'addon/util.lua': 'local function round(n) return math.floor(n + 0.5) end\n',
+      'addon/util.lua':
+        'local function round(n) return math.floor(n + 0.5) end\nlocal function floor(n) return math.floor(n) end\n',
     });
     const found = (await takeCensus(dir, scope)).navigation.passThroughs.map((p) => `${p.path}:${p.line} ${p.name}`);
     expect(found.sort()).toEqual([
-      'addon/util.lua:1 round',
+      'addon/util.lua:2 floor',
       'app/service.py:1 fetch',
       'src/store.ts:1 load',
+      'src/store.ts:10 find',
       'src/store.ts:4 save',
-      'src/store.ts:9 find',
     ]);
   });
 

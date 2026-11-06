@@ -207,13 +207,33 @@ function parameterNames(params: string): string[] | undefined {
     .filter((p) => p && !['self', 'cls', 'this'].includes(p));
 }
 
-/** Forwards when it takes parameters and hands every one of them to the call. */
+/** The arguments of a call split at its top-level commas, without spreads or keyword names. */
+function argumentsOf(args: string): Set<string> {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i <= args.length; i++) {
+    const c = args[i];
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    else if ((c === ',' && depth === 0) || i === args.length) {
+      parts.push(
+        args
+          .slice(start, i)
+          .trim()
+          .replace(/^(\.\.\.|\*\*?|\w+[ \t]*=(?!=)[ \t]*)/, ''),
+      );
+      start = i + 1;
+    }
+  }
+  return new Set(parts);
+}
+
+/** Forwards when it takes parameters and hands each one, unchanged, to the call as a whole argument. */
 function forwards(params: string, args: string): boolean {
   const names = parameterNames(params);
-  return (
-    Boolean(names?.length) &&
-    names!.every((n) => new RegExp(`(^|[^\\w$])${n.replace(/\$/g, '\\$')}([^\\w$]|$)`).test(args))
-  );
+  const given = argumentsOf(args);
+  return Boolean(names?.length) && names!.every((n) => given.has(n));
 }
 
 function lineAt(text: string, index: number): number {
