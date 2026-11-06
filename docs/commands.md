@@ -21,7 +21,7 @@ One step at a time
 
 Read
   sloppatrol status            The opportunities, the refactors and the agents
-  sloppatrol census            What the surveyor sees: stack, large files, mocks, churn
+  sloppatrol census            What the surveyor sees: stack, large files, mocks, churn, imports
   sloppatrol dismiss <id>      Never propose this opportunity again (--reason "...")
 ```
 

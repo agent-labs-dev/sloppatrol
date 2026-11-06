@@ -36,6 +36,10 @@ flowchart TB
 - At most `github.maxOpen` pull requests wait at once, and two never touch the same file.
 - An opportunity that fails the gate `maxAttempts` times is exhausted.
 
+## What the surveyor starts from
+
+`sloppatrol census` prints what the surveyor sees first, measured by code without a model: the stack, the largest files, the tests that use mocking libraries, and the files that change most. It adds navigation aids for TypeScript, JavaScript, Python and Lua, found by regex: how many files import each file, functions whose whole body forwards their parameters to one call, and top-level symbols named once elsewhere. They point where to read, and are never evidence: they miss dynamic imports and names built from strings. Other languages get no aids. On a 7,000-file repository the census takes under two seconds.
+
 ## Why you can trust a refactor
 
 An agent proposes; code decides. A refactor is kept only when every step below passes, and no agent can overrule one.

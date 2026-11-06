@@ -24,7 +24,8 @@ const MOCK = new RegExp(
 
 const MAX_BYTES = 400_000;
 
-async function text(root: string, path: string): Promise<string | undefined> {
+/** A file's text, or nothing when it is missing or too large to be hand-written code. */
+export async function readCapped(root: string, path: string): Promise<string | undefined> {
   try {
     const body = await readFile(join(root, path), 'utf8');
     return body.length > MAX_BYTES ? undefined : body;
@@ -40,12 +41,12 @@ export async function measureFiles(
 ): Promise<{ largest: FileSize[]; mocks: MockUse[] }> {
   const sizes: FileSize[] = [];
   for (const path of sources) {
-    const body = await text(root, path);
+    const body = await readCapped(root, path);
     if (body !== undefined) sizes.push({ path, lines: body.split('\n').length });
   }
   const mocks: MockUse[] = [];
   for (const path of tests) {
-    const body = await text(root, path);
+    const body = await readCapped(root, path);
     const hits = body?.match(MOCK);
     if (!body || !hits) continue;
     const line = body.split('\n').find((l) => new RegExp(MOCK.source).test(l)) ?? '';
