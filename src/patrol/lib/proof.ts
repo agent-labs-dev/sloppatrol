@@ -1,14 +1,17 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { isCode } from '../../census/index.js';
 import type { LoadedConfig } from '../../config/index.js';
 import {
   gainOf,
+  heldMutants,
   type Improvement,
   isMetricId,
   type MetricId,
   type MetricScore,
   type Mutation,
   type Opportunity,
+  type Proof,
   type UnitScores,
 } from '../../domain/index.js';
 import { runRecordedChecks } from '../../gate/index.js';
@@ -46,6 +49,63 @@ export async function mutationProof(
   } finally {
     await writeFile(file, original);
   }
+}
+
+/**
+ * For a source refactor: plants bugs on lines it kept, first on main, then
+ * on the change for each bug main's tests caught. The tests did not change,
+ * so a bug they catch on main and miss on the change means the refactor
+ * moved code out of their reach. At most `limit` bugs, two runs each.
+ */
+export async function heldProof(
+  ctx: RoleContext,
+  input: { worktree: string; baseDir: string; baseSha: string; refactorId: string; branch: string; limit: number },
+): Promise<NonNullable<Proof['behaviour']['held']>> {
+  const { config } = ctx.loaded;
+  const paths = (await git(input.worktree, ['diff', '--name-only', '--no-renames', input.baseSha, 'HEAD']))
+    .split('\n')
+    .filter((path) => path && isCode(path) && !matchesAny(path, config.tests));
+  const read = async (version: 'before' | 'after') =>
+    (
+      await Promise.all(
+        paths.map(async (path) => ({
+          path,
+          text:
+            version === 'before'
+              ? await tryGit(input.worktree, ['show', `${input.baseSha}:${path}`])
+              : await readFile(join(input.worktree, path), 'utf8').catch(() => undefined),
+        })),
+      )
+    ).flatMap((f) => (f.text === undefined ? [] : [{ path: f.path, text: f.text }]));
+  const held: NonNullable<Proof['behaviour']['held']> = [];
+  for (const bug of heldMutants(await read('before'), await read('after'), input.limit)) {
+    const before = await mutationProof(ctx, {
+      dir: input.baseDir,
+      mutation: bug.before,
+      sha: input.baseSha,
+      refactorId: input.refactorId,
+      branch: 'main',
+    });
+    if (!before.caught) {
+      held.push({ ...bug.after, caughtBefore: false, beforeRunId: before.runId });
+      continue;
+    }
+    const after = await mutationProof(ctx, {
+      dir: input.worktree,
+      mutation: bug.after,
+      sha: input.baseSha,
+      refactorId: input.refactorId,
+      branch: input.branch,
+    });
+    held.push({
+      ...bug.after,
+      caughtBefore: true,
+      beforeRunId: before.runId,
+      caughtAfter: after.caught,
+      afterRunId: after.runId,
+    });
+  }
+  return held;
 }
 
 /** Two labels per file in random order, so the assessor cannot tell the old version from the new. */

@@ -25,6 +25,11 @@ export function proofMarkdown(proof: Proof): string {
     lines.push(
       `- **The tests can fail.** Planted bug in \`${b.mutation.file}\`: \`${b.mutation.find.trim().slice(0, 80)}\` → \`${b.mutation.replace.trim().slice(0, 80)}\`. ${b.mutation.caught ? 'A test check turned red.' : 'No test check caught it.'}${b.mutation.caughtBefore === false ? ' The old tests on main missed it: this is new coverage.' : ''} (${b.mutation.why})`,
     );
+  const held = b.held?.filter((bug) => bug.caughtBefore) ?? [];
+  if (held.length)
+    lines.push(
+      `- **The tests are as strong.** ${held.length} planted bug${held.length === 1 ? '' : 's'} on lines this change kept, caught on main: ${held.map((bug) => `\`${bug.file}\` ${bug.caughtAfter ? 'caught' : 'missed'} on this change (${bug.why})`).join('; ')}.`,
+    );
   const imp = proof.improvement;
   if (imp) {
     lines.push(

@@ -22,6 +22,11 @@ export type Census = {
   navigation: Navigation;
 };
 
+/** A file of code in a language the census knows, as opposed to docs, data or config. */
+export function isCode(path: string): boolean {
+  return Boolean(languageOf(path)) || navigable(path);
+}
+
 export type CensusScope = { tests: readonly string[]; focus: readonly string[]; ignore: readonly string[] };
 
 export async function takeCensus(root: string, scope: CensusScope): Promise<Census> {

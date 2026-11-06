@@ -16,6 +16,7 @@ export {
   type Signals,
   type UnitScores,
 } from './lib/metrics.js';
+export { heldMutants } from './lib/mutants.js';
 export {
   fingerprintOf,
   gainOf,

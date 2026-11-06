@@ -8,7 +8,7 @@ import {
 } from '../../domain/index.js';
 import { checksKey, guardRulesFor, inspectChange, runRecordedChecks, testsPassed } from '../../gate/index.js';
 import { type RoleContext, review } from '../../roles/index.js';
-import { changedFiles, improvementProof, mutationProof } from './proof.js';
+import { changedFiles, heldProof, improvementProof, mutationProof } from './proof.js';
 import { proofMarkdown } from './proof-text.js';
 
 export type Judgement = Pick<Refactor, 'status' | 'reason' | 'verdict' | 'proof' | 'diffStat'>;
@@ -17,7 +17,8 @@ const GUARDS = ['one side', 'no frozen file', 'no suppression', 'no test removed
 
 /**
  * The gate on a committed refactor, in order: guards, checks, the mutation
- * (tests refactors), the blind improvement score, then the reviewer's veto.
+ * (a tests refactor) or the held planted bugs (a source refactor), the blind
+ * improvement score, then the reviewer's veto.
  * Each step that fails rejects; `save` records the proof as it grows.
  */
 export async function judge(
@@ -103,6 +104,28 @@ export async function judge(
         );
     }
     await ctx.store.setStatus({ role: 'gate', state: 'done', detail: `Mutation caught on ${branch}` });
+  }
+
+  if (opportunity.side === 'source' && config.mutation.sourceBugs > 0) {
+    await ctx.store.setStatus({ role: 'gate', state: 'running', detail: `Planted bugs on ${branch}` });
+    const held = await heldProof(ctx, {
+      worktree,
+      baseDir: input.baseDir,
+      baseSha,
+      refactorId: id,
+      branch,
+      limit: config.mutation.sourceBugs,
+    });
+    proof.behaviour.held = held;
+    await save({ proof });
+    const lost = held.filter((bug) => bug.caughtBefore && !bug.caughtAfter);
+    if (lost.length)
+      return reject(
+        `The tests catch ${lost.length === 1 ? 'a planted bug' : `${lost.length} planted bugs`} on main but not on this change, in ${lost.map((bug) => `\`${bug.file}\``).join(', ')}: the refactor moved code out of their reach.`,
+        verdict,
+        proof,
+      );
+    await ctx.store.setStatus({ role: 'gate', state: 'done', detail: `Planted bugs held on ${branch}` });
   }
 
   if (config.metrics.enabled) {

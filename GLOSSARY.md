@@ -16,4 +16,4 @@
 - **Assessor**: the agent that scores files against the rubric, with the lines as evidence.
 - **Scorecard**: the scores of a fixed panel of files on one commit, and the mean per metric.
 - **Proof**: a refactor's evidence: that it broke nothing, that its metrics went up, and that it followed the repo's rules.
-- **Mutation**: a bug a tests refactor plants in the unchanged source; a test check must catch it.
+- **Mutation**: a bug a tests refactor plants in the unchanged source; a test check must catch it. For a source refactor the gate plants bugs on lines the refactor kept, on main and on the change: one the tests catch on main they must catch on the change.

@@ -52,7 +52,7 @@ An agent proposes; code decides. A refactor is kept only when every step below p
 | Tests kept | The diff removes no test case, and changes no test file that no check runs (`uncheckedTests`). |
 | Size | At most `guards.maxFiles` files and `guards.maxLines` lines. |
 | Checks | Every command in `checks` passes, as it passes on `main`. Sloppatrol does no work while `main` is red. |
-| Mutation | A **tests** refactor plants one bug in the unchanged source; a test check must turn red. A test that cannot fail proves nothing. |
+| Mutation | A **tests** refactor plants one bug in the unchanged source; a test check must turn red. A test that cannot fail proves nothing. A **source** refactor gets `mutation.sourceBugs` bugs (2 by default) planted on lines it kept, on `main` and on the change: each bug the tests catch on `main` they must still catch, so a refactor cannot move tested code out of the tests' reach. |
 | Improvement | The assessor scores the changed files before and after, blind. The target metrics must go up; no other metric may drop. |
 | Review | A reviewer agent reads the diff against the playbook, and rejects when in doubt. |
 
@@ -62,7 +62,7 @@ So the stronger your tests, the more Sloppatrol can do. Each check must run the 
 
 Every pull request carries its proof, built by code and by a blind assessor, never by the agent that wrote the change:
 
-- **It breaks nothing:** the side it changed, the guards it passed, the same checks green on `main` and on the change (with the test counts), and for a tests refactor, the planted bug its tests caught.
+- **It breaks nothing:** the side it changed, the guards it passed, the same checks green on `main` and on the change (with the test counts), for a tests refactor the planted bug its tests caught, and for a source refactor the planted bugs its tests still catch.
 - **It makes the code better:** each metric before and after, the target marked, and the measured lines, nesting, comments, mocks and suppressions.
 - **It follows the repo's rules:** the rule files read, and the reviewer's account of each rule that applies.
 

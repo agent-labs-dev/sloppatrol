@@ -137,11 +137,21 @@ describe('a patrol', () => {
     const [recorded] = await deps.store.listOpportunities();
     expect(recorded).toMatchObject({ status: 'proposed', kind: 'simplify', side: 'source' });
     const runs = await deps.store.listCheckRuns();
-    expect(runs.map((r) => [r.purpose, r.status])).toEqual([
-      ['base', 'passed'],
-      ['refactorer', 'passed'],
-      ['gate', 'passed'],
+    // Two planted bugs on lines the refactor kept, each caught on main and on the change.
+    expect(runs.map((r) => [r.purpose, r.branch === 'main' ? 'main' : r.branch ? 'change' : '', r.status])).toEqual([
+      ['base', '', 'passed'],
+      ['refactorer', 'change', 'passed'],
+      ['gate', 'change', 'passed'],
+      ['mutation', 'main', 'failed'],
+      ['mutation', 'change', 'failed'],
+      ['mutation', 'main', 'failed'],
+      ['mutation', 'change', 'failed'],
     ]);
+    expect(refactored.proof?.behaviour.held?.map((b) => [b.caughtBefore, b.caughtAfter])).toEqual([
+      [true, true],
+      [true, true],
+    ]);
+    expect(pr.body).toContain('The tests are as strong.');
     expect(await deps.store.listCycles()).toMatchObject([
       { sha: refactored.baseSha, surveyed: 1, refactors: [{ id: refactored.id, status: 'verified' }], published: 1 },
     ]);
@@ -167,6 +177,33 @@ describe('a patrol', () => {
     expect(refactor.reason).toBe('The check test failed.');
     expect(refactor.verdict?.checks[0]?.ok).toBe(false);
     expect((await deps.store.listOpportunities())[0]).toMatchObject({ status: 'open', attempts: 1 });
+  });
+
+  it("rejects a source refactor that moves tested code out of the tests' reach", async () => {
+    const { repo, deps } = await setUp(false);
+    const file = join(repo, '.sloppatrol/sloppatrol.yml');
+    writeFileSync(file, `${readFileSync(file, 'utf8')}mutation: { sourceBugs: 10 }\n`);
+    await deps.store.saveOpportunity(opportunity());
+    script('refactorer', [
+      {
+        edit: {
+          file: 'src/price.js',
+          from: '  return Math.round(sum * 100) / 100;\n',
+          to: '  if (items.length > 99) {\n    return Math.round(sum * 100) / 100;\n  }\n  return Math.round(100 * sum) / 100;\n',
+        },
+      },
+      { tool: 'finish', input: { summary: 'Same rounding, written twice.' } },
+    ]);
+
+    const refactor = await refactorNow(await loadConfig(repo), deps);
+
+    expect(refactor.status).toBe('rejected');
+    expect(refactor.reason).toBe(
+      'The tests catch a planted bug on main but not on this change, in `src/price.js`: the refactor moved code out of their reach.',
+    );
+    expect(refactor.proof?.behaviour.held?.find((b) => b.caughtBefore && !b.caughtAfter)?.find).toBe(
+      '    return Math.round(sum * 100) / 100;',
+    );
   });
 
   it('rejects a source refactor that edits a test, before any check runs', async () => {
@@ -279,6 +316,7 @@ describe('a patrol', () => {
       ['base', ['test']],
       ['refactorer', ['test']],
       ['gate', ['test']],
+      ...Array.from({ length: 4 }, () => ['mutation', ['test']]),
     ]);
     writeFileSync(file, yaml.replace('checks: [test]', 'checks: [fast]'));
     await expect(loadConfig(repo)).rejects.toThrow('patrol.checks.0: no check is named fast');
