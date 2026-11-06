@@ -19,7 +19,7 @@ export async function patrol(
   await exclusive(await load(), deps, async () => {
     try {
       let idleStreak = 0;
-      for (let count = 1; ; count++) {
+      for (let count = 1; ; ) {
         const loaded = await load();
         const settings = loaded.config.patrol;
         const wait = deferral(
@@ -37,7 +37,7 @@ export async function patrol(
           await sleep(wait.minutes);
           continue;
         }
-        await deps.store.setStatus({ role: 'patrol', state: 'running', detail: `Cycle ${count}` });
+        await deps.store.setStatus({ role: 'patrol', state: 'running', detail: `Cycle ${count++}` });
         let result: CycleResult | undefined;
         try {
           result = await cycle(loaded, deps);
