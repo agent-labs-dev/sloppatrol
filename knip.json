@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": ["src/cli/index.ts", "src/**/tests/**/*.{ts,mjs}"],
-  "project": ["src/**/*.{ts,mjs}"]
+  "project": ["src/**/*.{ts,mjs}"],
+  "ignoreBinaries": ["ionice"]
 }

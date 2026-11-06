@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs';
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { CLI_AGENT_NAMES, CONFIG_DIR, CONFIG_FILE, ConfigError } from '../../config/index.js';
-import { refresh as refreshTools, vendor } from '../../project-rules/index.js';
 
 /** A guess at the repo's checks from its manifests. The user confirms them. */
 async function guessChecks(root: string): Promise<{ prepare: string[]; checks: { name: string; run: string }[] }> {
@@ -35,30 +34,12 @@ async function guessChecks(root: string): Promise<{ prepare: string[]; checks: {
   return { prepare: [], checks: [] };
 }
 
-/** Copies the project-rules tools into `dir` and says what changed. */
-async function vendorTools(dir: string, refresh: boolean, log: (line: string) => void): Promise<void> {
-  const { written, edited, version } = await (refresh ? refreshTools(dir) : vendor(dir));
-  if (written.length) log(`Vendored ${written.join(', ')} from Sloppatrol ${version} into ${dir}.`);
-  for (const name of edited)
-    log(`Kept ${name}: it was edited in this repo. Merge the shipped version by hand, or delete it and refresh again.`);
-}
-
-export async function init(
-  root: string,
-  options: { agent: string; refresh: boolean },
-  log: (line: string) => void,
-): Promise<void> {
-  const { agent } = options;
+export async function init(root: string, agent: string, log: (line: string) => void): Promise<void> {
   if (agent !== 'auto' && !CLI_AGENT_NAMES.includes(agent))
     throw new ConfigError(`--agent must be auto or one of ${CLI_AGENT_NAMES.join(', ')}`);
   const dir = join(root, CONFIG_DIR);
   const file = join(dir, CONFIG_FILE);
-  if (options.refresh) {
-    if (!existsSync(dir)) throw new ConfigError(`${dir} does not exist: run sloppatrol init first.`);
-    await vendorTools(dir, true, log);
-    return;
-  }
-  if (existsSync(file)) throw new ConfigError(`${file} exists already. To update the vendored tools: init --refresh.`);
+  if (existsSync(file)) throw new ConfigError(`${file} exists already.`);
   const guess = await guessChecks(root);
   const name = basename(root).replace(/[^\w.-]+/g, '-') || 'app';
   const checks = guess.checks.length
@@ -70,7 +51,7 @@ export async function init(
   await writeFile(
     file,
     `# Sloppatrol: https://github.com/agent-labs-dev/sloppatrol
-# Commit .sloppatrol/: this file, instructions.md and the vendored tools. runs/, reports/ and the ledger are local data.
+# Commit this file and instructions.md. runs/ is local data.
 version: 1
 project: { name: ${name} }
 # The agent every role runs on. auto: the first of claude, codex, opencode on PATH.
@@ -96,9 +77,10 @@ agents:
   refactorer: { maxPerCycle: 1, maxAttempts: 2 }
   reviewer: { enabled: true }
 # Quality metrics an assessor scores blind; each refactor must raise its target metric.
-metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3 }
+metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3, parallel: 3 }
 github: { enabled: false, maxOpen: 3 }
-patrol: { intervalMinutes: 60, pull: origin/main }
+# How hard the patrol works: see docs/configuration.md. maxLoad defaults to the CPU count.
+patrol: { intervalMinutes: 60, pull: origin/main, nice: 10, backoff: true, maxCyclesPerDay: 6 }
 `.replace('prepare:\n  []', 'prepare: []'),
   );
   const instructions = join(dir, 'instructions.md');
@@ -109,12 +91,8 @@ patrol: { intervalMinutes: 60, pull: origin/main }
     );
   const gitignore = join(root, '.gitignore');
   const ignored = existsSync(gitignore) ? await readFile(gitignore, 'utf8') : '';
-  const local = ['.sloppatrol/runs/', '.sloppatrol/reports/', '.sloppatrol/ledger.json'].filter(
-    (path) => !ignored.includes(path),
-  );
-  if (local.length)
-    await appendFile(gitignore, `${ignored && !ignored.endsWith('\n') ? '\n' : ''}${local.join('\n')}\n`);
-  await vendorTools(dir, false, log);
+  if (!ignored.includes('.sloppatrol/runs'))
+    await appendFile(gitignore, `${ignored && !ignored.endsWith('\n') ? '\n' : ''}.sloppatrol/runs/\n`);
   log(`Created ${file}.`);
   log('Next: run `sloppatrol doctor`, then `sloppatrol check`, then `sloppatrol`.');
 }

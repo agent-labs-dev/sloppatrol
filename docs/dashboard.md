@@ -1,6 +1,6 @@
 # The dashboard
 
-`sloppatrol` serves a dashboard on `http://127.0.0.1:4322` while it patrols (`--no-dashboard` turns it off; `sloppatrol dashboard` serves it alone). It reads the files under `.sloppatrol/runs/` and updates live, so it works during a patrol and after it. It listens on 127.0.0.1 only, and it is read-only.
+`sloppatrol --dashboard` serves a dashboard on `http://127.0.0.1:4322` while it patrols, and `sloppatrol dashboard` serves it alone. A plain `sloppatrol` starts no server. It reads the files under `.sloppatrol/runs/` and updates live, so it works during a patrol and after it. It listens on 127.0.0.1 only, and it is read-only.
 
 ![The Overview of the dashboard on a demo project](../assets/dashboard.png)
 

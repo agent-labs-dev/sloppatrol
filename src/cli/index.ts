@@ -22,7 +22,7 @@ import {
   surveyNow,
   unscored,
 } from '../patrol/index.js';
-import { stopAll } from '../processes/index.js';
+import { lowerPriority, stopAll } from '../processes/index.js';
 import { scorecardMarkdown } from '../roles/index.js';
 import { Store } from '../store/index.js';
 import { intFlag, parseArgv, strFlag } from './lib/argv.js';
@@ -100,11 +100,12 @@ async function main(args: string[]): Promise<number> {
     return EXIT.ok;
   }
   if (command === 'init') {
-    await init(cwd, { agent: strFlag(flags, 'agent') ?? 'auto', refresh: flags.refresh === true }, log);
+    await init(cwd, strFlag(flags, 'agent') ?? 'auto', log);
     return EXIT.ok;
   }
   const { loaded, deps } = await wire(cwd);
   const { store } = deps;
+  lowerPriority(loaded.config.patrol.nice, log);
   switch (command) {
     case 'doctor':
       return (await doctor(loaded, out)) ? EXIT.ok : EXIT.config;
@@ -191,9 +192,9 @@ async function main(args: string[]): Promise<number> {
     }
     default: {
       const server =
-        flags.dashboard === false
-          ? undefined
-          : await dashboard(store, loaded.config.project.name, intFlag(flags, 'port'));
+        flags.dashboard === true
+          ? await dashboard(store, loaded.config.project.name, intFlag(flags, 'port'))
+          : undefined;
       if (server) log(`Sloppatrol dashboard: ${server.url}`);
       stopOnSignal(store);
       try {

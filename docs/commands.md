@@ -3,13 +3,12 @@
 
 ```text
 Start
-  sloppatrol init              Create .sloppatrol/ with a guess at your checks, and vendor the rules gate
-  sloppatrol init --refresh    Update the vendored gate and AGENTS.md check; keep local edits
+  sloppatrol init              Create .sloppatrol/ with a guess at your checks
   sloppatrol doctor            Show the config, the agent each role runs on, and what is missing
 
 Run
-  sloppatrol                   Patrol all day: a cycle every patrol.intervalMinutes, with the dashboard
-  sloppatrol --once            One cycle, then stop
+  sloppatrol                   Patrol: a cycle every patrol.intervalMinutes, slower while nothing is found
+  sloppatrol --once            One cycle, then exit: for a scheduled CI job
   sloppatrol dashboard         Only the dashboard (http://127.0.0.1:4322)
   sloppatrol score             Score every file, then open the scorecard, ready to share
   sloppatrol review <pr|ref>   Score the files a pull request or branch changes, against its merge base
@@ -30,8 +29,8 @@ Read
 
 `sloppatrol review <pr|ref>` scores only the files that a pull request or a branch changes. A number, `#42` or a GitHub pull request URL names a pull request; `gh` gives its head and its base branch. Any other argument is a git ref, and it compares with `patrol.pull`. `--base <ref>` sets another base. Sloppatrol scores each changed file at the head and at the merge base, in checkouts under `.sloppatrol/runs/reviews/`, and removes them after. It uses the same score cache as `sloppatrol score`. The command prints a table, worst change first, and the line-weighted total. It changes no code, runs no checks, and posts nothing. It exits 1 when a file loses 10 points or more.
 
-`sloppatrol init --refresh` updates the vendored [project-rules tools](project-rules.md) and keeps a copy you edited.
+`sloppatrol` runs without the dashboard; add `--dashboard` to serve it. `sloppatrol --once` runs one cycle and exits, and skips it (exit 0) while the machine is busy or the day's cycles are used up, so a scheduled job can call it as often as it likes.
 
 Add `--cwd <dir>` to run a command in another repo. `sloppatrol --help` shows the usage.
 
-Omitting the command starts the patrol. An unknown command exits 2 with a help hint before loading the repo, starting the dashboard, or running agents. `audit` is a [skill route](project-rules.md), not a CLI command.
+Omitting the command starts the patrol. An unknown command exits 2 with a help hint before loading the repo, starting the dashboard, or running agents.

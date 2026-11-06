@@ -12,15 +12,8 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
    .sloppatrol/
      sloppatrol.yml     # the config: commit it
      instructions.md    # your notes for the agents: commit it
-     gate.py            # the project-rules gate: commit it
-     agents.py          # the AGENTS.md check: commit it
-     SOURCE.md          # the hashes of the vendored tools: commit it
-     ledger.json        # audit findings and their verdicts: an audit writes it, git ignores it
      runs/              # opportunities, refactors, check runs, scores, sessions: git ignores it
-     reports/           # one report per audit: git ignores it
    ```
-
-   `init` also appends `runs/`, `reports/` and `ledger.json` to `.gitignore`.
 
 2. Make `checks` the commands that prove behaviour in your repo: typecheck, lint, tests, build. Mark the test commands with `tests: true`. Put the install command in `prepare`. [Configuration](configuration.md) shows each setting.
 
@@ -31,14 +24,15 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
    npx sloppatrol check
    ```
 
-4. Start the patrol, and open the dashboard on http://127.0.0.1:4322:
+4. Start the patrol. Add `--dashboard` to follow it on http://127.0.0.1:4322:
 
    ```bash
-   npx sloppatrol           # a cycle every hour, with the dashboard
-   npx sloppatrol --once    # one cycle, then stop
+   npx sloppatrol               # a cycle every hour at most, slower while nothing is found
+   npx sloppatrol --dashboard   # the same, with the dashboard
+   npx sloppatrol --once        # one cycle, then exit
    ```
 
-5. Read the verified refactors in the dashboard. Then open their pull requests:
+5. Read the verified refactors with `npx sloppatrol status` or in the dashboard. Then open their pull requests:
 
    ```bash
    npx sloppatrol publish

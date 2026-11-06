@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import { finishTool, type RoleOutcome, repoTools, runRole, str, strList, tool } from '../../agents/index.js';
 import { type Census, censusMarkdown } from '../../census/index.js';
 import { type LoadedConfig, resolveRuntime } from '../../config/index.js';
@@ -19,8 +18,6 @@ import {
 import { listFiles } from '../../git/index.js';
 import { matchesAny } from '../../globs/index.js';
 import { metricsFor, rubricMarkdown } from '../../metrics/index.js';
-import { lens, lensIds } from '../../playbook/index.js';
-import { confirmedFindings, type Finding } from '../../project-rules/index.js';
 import { type RoleContext, systemPrompt } from './context.js';
 import { SURVEYOR } from './prompts.js';
 import { scorecardMarkdown } from './scorecard-text.js';
@@ -29,15 +26,10 @@ const STRENGTHS: Strength[] = ['strong', 'worth-exploring', 'speculative'];
 
 export type SurveyResult = RoleOutcome & { recorded: Opportunity[] };
 
-type Proposal = Pick<Opportunity, 'kind' | 'files' | 'metrics' | 'strength' | 'findings'>;
+type Proposal = Pick<Opportunity, 'kind' | 'files' | 'metrics' | 'strength'>;
 
 /** Reads the parts of a recorded opportunity that the gate depends on, and rejects what it could never keep. */
-function readProposal(
-  raw: Record<string, unknown>,
-  config: LoadedConfig['config'],
-  tracked: Set<string>,
-  confirmed: Map<string, Finding>,
-): Proposal {
+function readProposal(raw: Record<string, unknown>, config: LoadedConfig['config'], tracked: Set<string>): Proposal {
   const kind = str(raw, 'kind');
   if (!isOpportunityKind(kind)) throw new Error(`kind must be one of ${Object.keys(OPPORTUNITY_KINDS).join(', ')}`);
   const strength = str(raw, 'strength') as Strength;
@@ -63,20 +55,7 @@ function readProposal(
     if (!isMetricId(metric) || !applicable.has(metric))
       throw new Error(`${metric}: a ${side} refactor can target ${[...applicable].join(', ')}.`);
   if (metrics.length > 2) throw new Error('Target one or two metrics: the ones this refactor clearly improves.');
-  const findings = raw.findings === undefined ? [] : strList(raw, 'findings');
-  for (const id of findings) {
-    const finding = confirmed.get(id);
-    if (!finding) throw new Error(`${id} is not a confirmed finding: list_findings shows them.`);
-    if (!files.includes(finding.file))
-      throw new Error(`${id} is in ${finding.file}, which this opportunity does not change.`);
-  }
-  return {
-    kind: kind as OpportunityKind,
-    files,
-    metrics: metrics as MetricId[],
-    strength,
-    ...(findings.length ? { findings } : {}),
-  };
+  return { kind: kind as OpportunityKind, files, metrics: metrics as MetricId[], strength };
 }
 
 /** Reads the code at `sha` in the checkout `dir` and records opportunities. */
@@ -88,12 +67,9 @@ export async function survey(
   const settings = config.agents.surveyor;
   const tracked = new Set(await listFiles(input.dir));
   const recorded: Opportunity[] = [];
-  const confirmed = new Map(
-    (await confirmedFindings(input.dir, join(ctx.loaded.dir, 'ledger.json'))).map((f) => [f.id, f]),
-  );
 
   const record = async (raw: Record<string, unknown>): Promise<string> => {
-    const proposal = readProposal(raw, config, tracked, confirmed);
+    const proposal = readProposal(raw, config, tracked);
     const fingerprint = fingerprintOf(proposal.kind, proposal.files);
     const existing = (await ctx.store.listOpportunities()).find((o) => o.fingerprint === fingerprint);
     if (existing) throw new Error(`Recorded before (${existing.status}): ${existing.title}`);
@@ -138,27 +114,6 @@ export async function survey(
       return { text: text || 'None yet.' };
     }),
     tool(
-      'list_findings',
-      "The defects an audit confirmed in this repo's ledger, each with its lens, file and line.",
-      {},
-      [],
-      async () => {
-        const text = [...confirmed.values()]
-          .map((f) => `- \`${f.id}\` [${f.lens}] ${f.file}:${f.line}: ${f.what}`)
-          .join('\n');
-        return { text: text || 'None: the repo has no confirmed findings.' };
-      },
-    ),
-    tool(
-      'get_lens',
-      'One lens in full: the defect, what not to flag, how to judge it, what to record and the safe move.',
-      { id: { type: 'string', description: 'The lens id.', enum: await lensIds() } },
-      ['id'],
-      async (raw) => ({
-        text: (await lens(str(raw, 'id'))) ?? `Unknown lens. The lenses: ${(await lensIds()).join(', ')}`,
-      }),
-    ),
-    tool(
       'record_opportunity',
       'Record one refactor opportunity.',
       {
@@ -179,12 +134,6 @@ export async function survey(
           description: 'The one or two metrics this refactor clearly improves. The gate checks it.',
         },
         strength: { type: 'string', description: 'How sure you are.', enum: STRENGTHS },
-        findings: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'The ids of the confirmed findings this refactor resolves, from list_findings. Each must be in a listed file.',
-        },
       },
       ['kind', 'title', 'files', 'problem', 'change', 'benefits', 'metrics', 'strength'],
       async (raw) => ({ text: await record(raw) }),

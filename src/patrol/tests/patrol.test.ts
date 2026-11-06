@@ -7,7 +7,7 @@ import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
 import { cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
-import { agentCommand, fixtureRepo, gitIn, read, script, scriptQueue, withLedger } from './fixture.js';
+import { agentCommand, fixtureRepo, gitIn, read, script, scriptQueue } from './fixture.js';
 
 const SIMPLIFY = {
   kind: 'simplify',
@@ -153,39 +153,6 @@ describe('a patrol', () => {
     expect((await deps.store.listRefactors())[0]?.status).toBe('merged');
   });
 
-  it('runs the project-rules gate as a check, and ties an opportunity to the confirmed findings it resolves', async () => {
-    const { repo } = await setUp();
-    const [confirmed, dismissed] = await withLedger(repo, [
-      { lens: 'reinvented-wheel', file: 'src/price.js', quote: 'let sum = 0;', status: 'confirmed' },
-      { lens: 'dead-code', file: 'src/price.js', quote: 'let sum = 0;', status: 'dismissed' },
-    ]);
-    const loaded = await loadConfig(repo);
-    expect(loaded.config.checks.map((c) => c.name)).toEqual(['test', 'project-rules']);
-    const fake = new FakeGitHub();
-    const deps: PatrolDeps = { store: new Store(loaded.dir), github: fake, runtimeFor: createRuntime, log: () => {} };
-    script('surveyor', [
-      { tool: 'list_findings' },
-      { tool: 'get_lens', input: { id: 'reinvented-wheel' } },
-      { tool: 'record_opportunity', input: { ...SIMPLIFY, findings: [dismissed] }, mustSucceed: false },
-      { tool: 'record_opportunity', input: { ...SIMPLIFY, findings: [confirmed] } },
-      { tool: 'finish', input: { summary: 'One opportunity.' } },
-    ]);
-    script('refactorer', [
-      { tool: 'get_opportunity' },
-      { edit: { file: 'src/price.js', from: LOOP, to: REDUCE } },
-      { tool: 'run_checks' },
-      { tool: 'finish', input: { summary: 'total() now uses reduce.' } },
-    ]);
-    script('assessor', reduceIsBetter);
-    script('reviewer', approve);
-
-    await cycle(loaded, deps);
-
-    expect((await deps.store.listOpportunities())[0]?.findings).toEqual([confirmed]);
-    expect(fake.pullRequests[0]?.body).toContain(`Resolves the confirmed findings \`${confirmed}\``);
-    expect((await deps.store.listCheckRuns()).map((r) => r.status)).toEqual(['passed', 'passed', 'passed']);
-  });
-
   it('rejects a refactor that changes behaviour, because a check fails', async () => {
     const { loaded, deps } = await setUp();
     await deps.store.saveOpportunity(opportunity());
@@ -285,6 +252,36 @@ describe('a patrol', () => {
     writeFileSync(file, readFileSync(file, 'utf8').replace('run: node --test', 'run: node --test --test-reporter=dot'));
     await openBase(await loadConfig(repo), deps);
     expect(await baseRuns()).toBe(2);
+  });
+
+  it('runs only the checks patrol.checks names, and the refactorer only maxCheckRuns times', async () => {
+    const { repo, deps } = await setUp(false);
+    const file = join(repo, '.sloppatrol/sloppatrol.yml');
+    const yaml = readFileSync(file, 'utf8')
+      .replace('checks:\n', 'checks:\n  - { name: slow, run: exit 1 }\n')
+      .replace('patrol: { pull: main }', 'patrol: { pull: main, checks: [test] }');
+    writeFileSync(file, yaml);
+    await deps.store.saveOpportunity(opportunity());
+    script('refactorer', [
+      { edit: { file: 'src/price.js', from: LOOP, to: REDUCE } },
+      { tool: 'run_checks' },
+      { tool: 'run_checks' },
+      { tool: 'finish', input: { summary: 'total() now uses reduce.' } },
+    ]);
+    script('assessor', reduceIsBetter);
+    script('reviewer', approve);
+
+    const refactor = await refactorNow(await loadConfig(repo), deps);
+
+    expect(refactor.status).toBe('verified');
+    const runs = await deps.store.listCheckRuns();
+    expect(runs.map((r) => [r.purpose, r.results.map((c) => c.name)])).toEqual([
+      ['base', ['test']],
+      ['refactorer', ['test']],
+      ['gate', ['test']],
+    ]);
+    writeFileSync(file, yaml.replace('checks: [test]', 'checks: [fast]'));
+    await expect(loadConfig(repo)).rejects.toThrow('patrol.checks.0: no check is named fast');
   });
 
   it('names the branch without the type prefix, and never attempts a verified opportunity again by hand', async () => {

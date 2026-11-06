@@ -1,10 +1,6 @@
 node_modules/
 dist/
 *.tsbuildinfo
-__pycache__/
-.venv/
-.pytest_cache/
-.ruff_cache/
 coverage/
 .DS_Store
 *.log
@@ -12,8 +8,6 @@ coverage/
 # Sloppatrol local data: checkouts, worktrees, agent sessions, check results.
 # The config and the instructions are committed.
 **/.sloppatrol/runs/
-**/.sloppatrol/reports/
-**/.sloppatrol/ledger.json
 
 .env
 .env.*

@@ -11,9 +11,6 @@ function pullRequestBody(opportunity: Opportunity, refactor: Refactor): string {
   return [
     `**${opportunity.kind}**: ${opportunity.change}`,
     `## Why\n\n${opportunity.problem}\n\n${opportunity.benefits}`,
-    opportunity.findings?.length
-      ? `## Findings\n\nResolves the confirmed findings ${opportunity.findings.map((id) => `\`${id}\``).join(', ')} in \`.sloppatrol/ledger.json\`. Mark them fixed after the merge.`
-      : '',
     refactor.summary ? `## What changed\n\n${refactor.summary}` : '',
     refactor.proof ? `## Proof\n\n${proofMarkdown(refactor.proof)}` : '',
     refactor.verdict?.review ? `## Review\n\n${refactor.verdict.review.reasons}` : '',
