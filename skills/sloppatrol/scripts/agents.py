@@ -23,6 +23,7 @@ from urllib.parse import unquote
 
 sys.dont_write_bytecode = True
 
+VERSION = "0.1.0"
 MAX_BYTES = 32 * 1024
 NOTE_BYTES = 12 * 1024
 SKIP_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".venv", "target", "__pycache__"}
@@ -82,8 +83,7 @@ def default_root() -> Path:
 def repository_files(root: Path) -> list[str]:
     result = git(root, "ls-files", "-co", "--exclude-standard", "-z", "--", ".")
     if result is not None:
-        # Git also lists tracked deletions, which have nothing left to inspect.
-        names = {name for name in result.split("\0") if name and os.path.lexists(root / name)}
+        names = set(filter(None, result.split("\0")))
     else:
         names = set()
         for base, dirs, files in os.walk(root, onerror=raise_io):
@@ -868,6 +868,9 @@ def check(root: Path, max_lines: int = 300, *, max_skill_lines: int = SKILL_MAX_
     if not (root / "AGENTS.md").is_file():
         issues.append(issue("missing-root", "AGENTS.md", 1, "root AGENTS.md is missing"))
     for file in files:
+        # Git also lists tracked deletions, which have no instructions left to inspect.
+        if not (root / file).exists() and not (root / file).is_symlink():
+            continue
         content = (root / file).read_bytes().decode("utf-8")
         contents[file] = content
         issues.extend(check_file(root, file, content, max_lines))

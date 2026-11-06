@@ -13,8 +13,11 @@ Verified: 2026-09
 
 ## Detection signals
 
-Manifests, shebangs, build files, lockfiles and CI name the language, dialect and runtime
-versions. Confirm them by reading the repository, as in [setup, section 1](../setup.md#1-inventory).
+Start with inventory output, manifests, shebangs, build files, lockfiles, and CI.
+Confirm the language, dialect, runtime versions, generated sources, supported
+platforms, and package boundaries by reading the repository. Ask which commands
+contributors actually run only when repository evidence leaves a material gap.
+Preserve a working toolchain unless a replacement closes a demonstrated gap.
 
 ## Toolchain by concern
 
@@ -40,6 +43,8 @@ limits in the project skill. Use `<tool> --help` when a flag is uncertain. Repla
 that placeholder with the discovered executable; do not invent a plausible flag.
 
 ### Shared tool installation
+
+These are setup examples; resolve versions once, then pin the tested artifacts:
 
 Evidence tools run on demand and should not become dependencies of a project in
 another language. Run them without installing into the project:
@@ -116,7 +121,7 @@ python3 .sloppatrol/gate.py --all
 
 ## Looks dead but is live
 
-Rule out the six reachability paths in [dead-code](../lenses/dead-code.md), open work
+Rule out the six reachability paths in [dead-code](../../references/lenses/dead-code.md), open work
 included. Search manifests and loader configuration, inspect registries, read consumer docs,
 and exercise representative entry points. Repeating name searches is not additional
 evidence. Serialization, migrations, cleanup, compatibility, and metrics can be
@@ -132,7 +137,9 @@ Every rule needs both a real failing example and legitimate passing examples.
 
 ## Pitfalls
 
-Try a proposed tool on a tiny known-good and known-bad fixture before wiring CI, and read its
-exit behaviour and report format, not just that it starts. Check its licence, maintenance and
-runtime support upstream. Record an unresolved concern as a gap
-instead of inventing a tool or check.
+Try the proposed tool on a tiny known-good and known-bad fixture before wiring CI.
+Inspect its exit behavior and report format, not just its ability to start. Verify
+licenses, maintenance, runtime support, and installation reproducibility from
+upstream sources. Record an unresolved concern as a gap instead of fabricating a
+tool or check. Avoid blanket ignores, overlap between tools, and silent fallback
+commands that make an incomplete review look clean.

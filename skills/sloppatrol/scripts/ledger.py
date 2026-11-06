@@ -17,6 +17,7 @@ from tempfile import NamedTemporaryFile
 from typing import Any
 
 sys.dont_write_bytecode = True
+VERSION = "0.1.0"
 
 # The marker grammar, coverage window and registered ids have one definition, in the sibling gate.py.
 # Running a script puts its own directory first on sys.path, so this resolves wherever the pair sits.

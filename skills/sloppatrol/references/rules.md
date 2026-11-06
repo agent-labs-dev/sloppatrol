@@ -47,7 +47,7 @@ Use the first that can express it:
 
 ## Running the gate
 
-The gate is `.sloppatrol/gate.py`, vendored by `sloppatrol init`. It runs every ast-grep rule and its
+The gate is `.sloppatrol/gate.py`, vendored from sloppatrol byte for byte. It runs every ast-grep rule and its
 tests, every script rule and its tests, and checks every suppression marker:
 
 ```sh
@@ -59,8 +59,20 @@ python3 .sloppatrol/gate.py --json               # one JSON object, suppressed h
 python3 .sloppatrol/gate.py --fast --base origin/main  # before a push: only what this branch can change
 ```
 
-Exit 1 means findings. Exit 2 means the gate cannot run or is misconfigured: fix the gate, not the
-code. The output format, `--fast`, base resolution and the script protocol are in
+`--fast` skips rule tests for rules the branch did not touch, scans changed files only with
+untouched ast-grep rules, and skips scripts whose `sloppatrol-inputs:` the branch missed. It never drops
+a finding on a changed file, but it can hide one the base already had elsewhere, so CI runs the
+full gate.
+
+| Exit | Meaning |
+|---|---|
+| 0 | every stage ran and found nothing |
+| 1 | findings: offenders, failing rule or script tests, or marker problems |
+| 2 | the gate cannot run or is misconfigured. Fix the gate, not the code |
+
+Each finding prints as `path:line: <id> <message>`, followed by one `fix:` line per rule with
+findings. Under GitHub Actions each finding is also an `::error` annotation, and the log ends
+with every finding listed between `=== sloppatrol findings: N ===` and `=== end sloppatrol findings ===`. The full contract (layout, validation, base resolution, script protocol) is in
 [contracts.md](contracts.md#project-rules).
 
 ## Writing one
@@ -142,15 +154,22 @@ change inherits a file's whole backlog.
 
 ## Suppressions
 
-A suppression is a whole-line comment naming the rule and the **contract that makes this occurrence
-safe**. The same marker works for rules, script rules and lenses:
+There is one syntax. A suppression is a whole-line comment naming the rule and the **contract that
+makes this occurrence safe**:
 
 ```python
 # sloppatrol: no-raw-sql - runs inside the migration, before the model layer exists
 op.execute("UPDATE ...")
 ```
 
-The grammar, the coverage rule, the reasons that are refused and every marker code are in
+- It covers a hit within the three lines above it, or anywhere in the comment block directly above
+  it. The same marker works for rules, script rules and lenses.
+- "False positive", "intentional", "legacy" and restatements of the code are not reasons.
+- A marker that covers no hit of a rule that ran over the whole tree fails the gate
+  (`sloppatrol-unused-marker`). Lens markers are not checked.
+- `ast-grep-ignore` is banned: rewrite it as a `sloppatrol:` marker.
+
+The grammar, the exact coverage rule and every marker code are in
 [contracts.md](contracts.md#suppressions).
 
 ## Promotion from audits
@@ -168,15 +187,17 @@ A rule retires only on a cited criterion, stated in the commit:
 2. **Gone.** The feature it guards no longer exists, shown with a search.
 3. **Judgment.** It never reached zero because hits need a reader. It becomes a lens.
 
+The gate's `sloppatrol-retired-id` stage reports current tracked references to deleted rule and script ids, excluding reports, runs, ledger files and changelogs.
+
 Two rules merge only when the survivor flags every invalid case of the rule it absorbs. Otherwise
 both stay. Delete markers naming a retired id in the same change; the gate reports them otherwise.
 
 A retirement is not finished until nothing still cites the id or the thing it guarded. In the same
 change, search for the id and for the idea (a number, a limit, a name) in: markers, rule-tests and
 script-tests, ledger guards (`rule:<id>` becomes `lens-only: <why>` or a `settled:` entry),
-reports, runs and ledger files, `AGENTS.md`, skills and docs, dev scripts, build and CI files. `ledger.py guards`
-checks stored guards, the gate's `sloppatrol-retired-id` stage checks references to deleted rule and
-script ids, and the rest is a search. Prose that quotes the retired rule's threshold needs rewording, not a grep for the id.
+reports, runs and ledger files, `AGENTS.md`, skills and docs, dev scripts, build and CI files. `ledger.py guards` checks stored guards, the gate's `sloppatrol-retired-id` stage checks references to deleted rule and script ids, and the rest is a search.
+Prose
+that quotes the retired rule's threshold needs rewording, not a grep for the id.
 
 ## Shapes and the mechanism that fits
 

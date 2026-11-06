@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from conftest import SCRIPTS, commit, git, write
 
-from skills.sloppatrol.scripts import gate
+from skills.sloppatrol.scripts import agents, gate
 
 AST = pytest.mark.skipif(shutil.which("ast-grep") is None, reason="ast-grep is not on PATH (requires 0.44.1)")
 REASON = "Required by external callers"
@@ -90,9 +90,36 @@ def codes(data: dict) -> set[str]:
     return {hit["id"] for hit in data["findings"]}
 
 
-def test_version_matches_the_package() -> None:
-    package = json.loads((SCRIPTS.parents[2] / "package.json").read_text())
-    assert package["version"] == gate.VERSION
+def test_builtin_lenses_and_version() -> None:
+    root = SCRIPTS.parents[2]
+    package = json.loads((root / "package.json").read_text())
+    assert {gate.VERSION, agents.VERSION, package["version"]} == {gate.VERSION}
+    assert isinstance(gate.BUILTIN_LENSES, frozenset)
+    assert (
+        frozenset(
+            [
+                "comment-narration",
+                "copy-slop",
+                "dead-code",
+                "defensive-noise",
+                "hidden-dependency",
+                "interface-leak",
+                "oversized-modules",
+                "parallel-implementations",
+                "reader-journey",
+                "reinvented-wheel",
+                "session-residue",
+                "shallow-modules",
+                "silent-fallbacks",
+                "speculative-abstraction",
+                "stale-docs",
+                "stringly-typed",
+                "test-plumbing",
+                "wall-of-text",
+            ]
+        )
+        == gate.BUILTIN_LENSES
+    )
 
 
 @pytest.mark.parametrize("line", [1, 2, 3, 4])
@@ -303,6 +330,7 @@ def test_rule_filter_tests_markers_and_unknown_id(repo: Path) -> None:
     [
         ("id", "different"),
         ("severity", "warning"),
+        ("severity", "off"),
         ("message", None),
         ("note", None),
         ("metadata", "  sloppatrol-scope: maybe"),
@@ -459,7 +487,9 @@ def test_corpus_rejects_unrepresentable_paths(repo: Path, name: str) -> None:
     assert "TAB or newline" in report(repo, code=2)["findings"][0]["message"]
 
 
-@pytest.mark.parametrize("args", [("--all", "--base", "HEAD"), ("--files", "a.py"), ("--base", "")])
+@pytest.mark.parametrize(
+    "args", [("--all", "--base", "HEAD"), ("--version",), ("--files", "a.py"), ("--base", "")]
+)
 def test_usage_errors(repo: Path, args: tuple[str, ...]) -> None:
     assert invoke(repo, *args).returncode == 2
 
