@@ -147,6 +147,16 @@ export const configSchema = z
     patrol: z
       .object({
         intervalMinutes: z.number().positive().default(60),
+        /** Double the wait after each cycle that found and did nothing, up to `maxIntervalMinutes`. */
+        backoff: z.boolean().default(true),
+        maxIntervalMinutes: z
+          .number()
+          .positive()
+          .default(24 * 60),
+        /** The most cycles that start in any 24 hours. 0 sets no cap. */
+        maxCyclesPerDay: z.number().int().nonnegative().default(6),
+        /** Skip a cycle while the 1-minute load average is above this. The CPU count by default; 0 never skips. */
+        maxLoad: z.number().nonnegative().optional(),
         /** The ref to patrol. A `remote/branch` is fetched first. */
         pull: z.string().default('origin/main'),
         /**
