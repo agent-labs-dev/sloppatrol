@@ -80,11 +80,11 @@ always cover the whole repository: scripts, CI, docs, configuration and open wor
   branch refs: verifiers search them. Symbols those branches reference are live (reachability
   path 6 in [dead-code](lenses/dead-code.md)).
 - **Starting state.** Record `git status` and HEAD. Leave a dirty tree's changes untouched and keep
-  your edits separable from them. Make sure `.sloppatrol/runs/` and `.sloppatrol/reports/` exist and
-  are git-ignored.
-- **Previous report.** Read the newest file in `.sloppatrol/reports/` and the commit its heading
-  names (`@ <sha>`); with none, use the merge-base with `<base-sha>`, so what this branch added is
-  measured too. Section 8 measures gate loosening against it.
+  your edits separable from them. Make sure `.sloppatrol/runs/` exists and is git-ignored.
+- **Previous report.** Record the commit that last touched `.sloppatrol/reports/`:
+  `git log -1 --format=%H -- .sloppatrol/reports`. When the newest report there is uncommitted, use the
+  commit its heading names (`@ <sha>`) instead. Section 8 measures gate loosening against it. With
+  no previous report, use the merge-base with `<base-sha>`, so what this branch added is measured too.
 
 ## 1. Gate first
 
@@ -100,8 +100,8 @@ code: any new line is yours. The report lists the red lines and their ledger ids
 
 ## 2. Evidence
 
-Run the evidence tools (the project skill's commands, or the tools the repository already runs):
-dead-code detectors, clone detection, `python3 .sloppatrol/gate.py --all` (the full backlog of rules that normally
+Run the evidence tools (project skill first, else `references/languages/<lang>.md`): dead-code
+detectors, clone detection, `python3 .sloppatrol/gate.py --all` (the full backlog of rules that normally
 check only changed files), and `agents.py check` (the project's vendored `.sloppatrol/agents.py` when it has one, else the skill's). This is the half that does not hallucinate, and it
 still only produces candidates: detectors miss dynamic dispatch and over-report framework
 entrypoints.
@@ -305,12 +305,13 @@ source, a convention), fix `AGENTS.md` where the audit proved it stale, and reru
 
 Use [the report template](../assets/report.md) and save it as `.sloppatrol/reports/<YYYY-MM-DD>.md`, or
 `<YYYY-MM-DD>-<n>.md` with the next free `n` when that day already has one. Never overwrite a
-report: it is what the next audit reads. The report is local scratch and is never committed.
-Build the Confirmed table's Guard column from `ledger.py list --json`, never by hand. The ledger
-(`.sloppatrol/ledger.json`) is local memory and stays out of the change.
+report: it is what the next audit reads.
+Build the Confirmed table's Guard column from `ledger.py list --json`, never by hand. When the user asked for commits, commit the
+report with the ledger (`.sloppatrol/ledger.json`): the ledger is the
+memory the next audit starts from.
 
-**Gate loosening.** Before writing the report, list everything since the previous report's commit
-(step 0) that makes the gate easier to pass, whoever added it:
+**Gate loosening.** Before committing the report, list everything since the previous report's
+commit (step 0) that makes the gate easier to pass, whoever added it:
 
 ```sh
 prev=<commit from step 0>

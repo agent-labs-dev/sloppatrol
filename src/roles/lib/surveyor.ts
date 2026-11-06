@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import { finishTool, type RoleOutcome, repoTools, runRole, str, strList, tool } from '../../agents/index.js';
 import { type Census, censusMarkdown } from '../../census/index.js';
 import { type LoadedConfig, resolveRuntime } from '../../config/index.js';
@@ -88,9 +87,7 @@ export async function survey(
   const settings = config.agents.surveyor;
   const tracked = new Set(await listFiles(input.dir));
   const recorded: Opportunity[] = [];
-  const confirmed = new Map(
-    (await confirmedFindings(input.dir, join(ctx.loaded.dir, 'ledger.json'))).map((f) => [f.id, f]),
-  );
+  const confirmed = new Map((await confirmedFindings(input.dir)).map((f) => [f.id, f]));
 
   const record = async (raw: Record<string, unknown>): Promise<string> => {
     const proposal = readProposal(raw, config, tracked, confirmed);

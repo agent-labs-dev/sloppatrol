@@ -13,7 +13,6 @@ pnpm test
 uv run --group dev pytest tests/python -q
 uv run --group dev ruff check skills/sloppatrol/scripts tests/python
 uv run --group dev ruff format --check skills/sloppatrol/scripts tests/python
-python3 skills/sloppatrol/scripts/agents.py check
 ```
 
 ## Rules

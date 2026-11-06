@@ -80,7 +80,7 @@ def test_missing_root(tmp_path: Path) -> None:
     "content, code",
     [
         (GOOD.replace("Work on this small library using the checks below.", ""), "missing-summary"),
-        (GOOD.replace("## Checks", "## Usage"), "missing-commands"),
+        (GOOD.replace("echo ok\n```", "echo ok\n```").replace("## Checks", "## Usage"), "missing-commands"),
         (GOOD.replace("```sh\necho ok\n```", "Run the tests."), "missing-commands"),
         (GOOD.replace("## Rules", "### Rules"), "missing-rules"),
         (GOOD.replace("## Rules", "## Guidance"), "missing-rules"),

@@ -1,6 +1,6 @@
 # Project rules and the audit
 
-The patrol makes one verified refactor at a time. The audit and the project-rules gate are the other half of Sloppatrol: they find slop in a path or a branch diff, keep what was found in a ledger that the next audit and the surveyor read, and turn what must not come back into rules that CI enforces. They need no service and no API key.
+The patrol makes one verified refactor at a time. The audit and the project-rules gate are the other half of Sloppatrol: they find slop in a path or a branch diff, keep what was found in a committed ledger, and turn what must not come back into rules that CI enforces. They need no service and no API key.
 
 ## The audit
 
@@ -14,13 +14,13 @@ The audit is a route of the [Sloppatrol skill](../skills/sloppatrol/SKILL.md), r
   sgconfig.yml  rules/  rule-tests/             ast-grep rules and their tests
   scripts/  script-tests/  lib/                 script rules and their tests
   lenses/                                       the repo's own lenses
-  runs/  reports/  ledger.json                  local data, ignored by git
+  ledger.json                                   every finding and its verdict
+  reports/                                      one report per audit
+  runs/                                         local data, ignored by git
 .agents/skills/sloppatrol-project/SKILL.md      what the audit settled for this repo
 ```
 
 `sloppatrol init` vendors the tools, and `sloppatrol init --refresh` updates them. A refresh keeps a copy you edited and says so, because its hash no longer matches `SOURCE.md`.
-
-The ledger and the reports are local by default, so an audit PR carries no paperwork. A team that wants one shared ledger can track `.sloppatrol/ledger.json`.
 
 ## The gate in CI
 

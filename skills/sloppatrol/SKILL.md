@@ -63,9 +63,8 @@ sharper; it is not a precondition. The same holds for the project gate without
 
 Load only what the procedure points at. The shared contracts (run files, findings, outcomes,
 suppressions, project rules and shipped helper interfaces) live in [references/contracts.md](references/contracts.md).
-The review lenses live in [references/lenses](references/lenses/), one file per id. Toolchains are
-the project's own: the project skill records the commands, and an audit without one uses the tools
-the repository already runs.
+The review lenses live in [references/lenses](references/lenses/), one file per id, and per-language
+toolchains in `references/languages/<lang>.md`.
 
 
 ## 6. Audit helpers

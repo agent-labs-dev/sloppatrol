@@ -587,6 +587,7 @@ function verifiedRefactor(
         guards: ['one side', 'no frozen file', 'no suppression', 'no test removed', 'within the size limit'],
         testsBase: 212,
         testsHead: 212,
+        headRunId: input.gateRunId,
       },
       improvement: {
         rubric: RUBRIC,

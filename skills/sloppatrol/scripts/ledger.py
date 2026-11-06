@@ -521,12 +521,10 @@ def argument_parser() -> argparse.ArgumentParser:
     plain: dict[str, Any] = {"color": False} if sys.version_info >= (3, 14) else {}
     parser = argparse.ArgumentParser(description=__doc__, **plain)
     parser.add_argument("--root", type=Path, help="repository root (default: git toplevel or cwd)")
-    parser.add_argument("--ledger", type=Path, help="ledger file (default: <root>/.sloppatrol/ledger.json)")
     commands = parser.add_subparsers(dest="command", required=True)
     for command in ("check", "add", "set", "list", "guards", "rekey"):
         sub = commands.add_parser(command, **plain)
         sub.add_argument("--root", type=Path, default=argparse.SUPPRESS, help="repository root")
-        sub.add_argument("--ledger", type=Path, default=argparse.SUPPRESS, help="ledger file")
         if command in ("check", "add"):
             sub.add_argument("runs", metavar="RUN", nargs="+")
         if command in ("check", "list"):
@@ -554,7 +552,7 @@ def main() -> int:
         ).resolve()
         if not root.is_dir():
             raise ValueError("--root must be an existing directory")
-        path = (args.ledger or rooted(root, LEDGER_PATH)).resolve()
+        path = rooted(root, LEDGER_PATH)
         if args.command == "rekey":
             return rekey_ledger(path)
         items = load_ledger(path)
