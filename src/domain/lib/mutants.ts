@@ -36,8 +36,10 @@ const OPERATORS: [pattern: RegExp, replace: string, why: string][] = [
 const COMMENT = /^(\/\/|\/\*|\*|#|--|"""|''')/;
 
 /** The first operator outside a string literal, judged by the quotes before it. */
-function mutate(line: string): { line: string; why: string } | undefined {
-  for (const [pattern, replace, why] of OPERATORS) {
+function mutate(line: string, path: string): { line: string; why: string } | undefined {
+  for (const [pattern, operator, why] of OPERATORS) {
+    // Lua writes inequality as ~=, and != does not load.
+    const replace = path.endsWith('.lua') && operator === ' != ' ? ' ~= ' : operator;
     const at = line.search(pattern);
     if (at === -1) continue;
     const before = line.slice(0, at);
@@ -72,12 +74,12 @@ export function heldMutants(before: FileText[], after: FileText[], limit: number
     const news = is.get(key);
     if (olds.length !== 1 || news?.length !== 1 || COMMENT.test(key)) continue;
     const [old, now] = [olds[0]!, news[0]!];
-    const edit = mutate(key);
+    const edit = mutate(key, old.path);
     if (!edit || !unique(old.raw, old.text) || !unique(now.raw, now.text)) continue;
     const plant = (at: { path: string; raw: string }): Mutation => ({
       file: at.path,
       find: at.raw,
-      replace: at.raw.replace(key, edit.line),
+      replace: at.raw.replace(key, () => edit.line),
       why: edit.why,
     });
     found.push({

@@ -36,7 +36,10 @@ export async function mutationProof(
     throw new Error(`The mutation's text is not once in ${input.mutation.file}.`);
   const testChecks = config.checks.filter((c) => c.tests);
   const checks = testChecks.length ? testChecks : config.checks;
-  await writeFile(file, original.replace(input.mutation.find, input.mutation.replace));
+  await writeFile(
+    file,
+    original.replace(input.mutation.find, () => input.mutation.replace),
+  );
   try {
     const run = await runRecordedChecks(
       ctx.store,
