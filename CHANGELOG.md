@@ -25,3 +25,7 @@ The patrol is light by default, so it can stay on across many repos on a shared 
 [Configuration](docs/configuration.md#how-hard-the-patrol-works) lists the settings that bring back the old schedule.
 
 **Migration.** A repository that vendors `.sloppatrol/gate.py` or `.sloppatrol/agents.py`, or calls the action in CI, keeps working from its own copy, but nothing here updates it. Either drop the gate, its CI job and its `sloppatrol:` markers, or own the rules: move them under a path of your own and run them as an ordinary check. Delete `.sloppatrol/ledger.json` and `.sloppatrol/reports/`, which nothing reads now.
+
+### Changed
+
+- The surveyor looks for five more smells, each only in its behaviour-preserving form: defensive noise (checks and `try`/`catch` for cases the contracts rule out), reinvented wheels (hand-rolled code the standard library or an existing dependency does, never by adding one), session residue (debug prints nothing reads, unowned TODOs, commented-out code, placeholder names), comment narration, and incomplete migrations (an old and a new API side by side). [Smells](playbook/smells.md) maps each to an existing opportunity kind.
