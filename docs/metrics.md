@@ -1,7 +1,7 @@
 # The metrics
 
 
-An assessor agent scores each file against a fixed rubric, and cites the lines behind each score. For each metric it picks one of five anchored levels, and Sloppatrol shows the result as 0 (worst) to 100 (best): a level of 3 is 75. A scorecard also shows one **overall** score, the mean of all metrics. The rubric anchors every level in things a reader can point at, so scores stay consistent ([ADR 0004](adr/0004-llm-judged-metrics.md)).
+An assessor agent scores each file against a fixed rubric, and cites the lines behind each score. For each metric it picks one of five anchored levels, and Sloppatrol shows the result as 0 (worst) to 100 (best): a level of 3 is 75. A scorecard also shows one **overall** score, the mean of all metrics. The rubric anchors every level in things a reader can point at, so scores stay consistent ([ADR 0004](adr/0004-llm-judged-metrics.md)). Each metric names what to count against a file and the look-alikes not to count: a guard at a trust boundary, a comment that says why, the composition root creating adapters. The surveyor gets a matching list of changes not to propose.
 
 | Metric | The question |
 | --- | --- |

@@ -58,6 +58,6 @@ export function rubricMarkdown(): string {
     (m) =>
       `## ${m.name} (\`${m.id}\`, ${m.appliesTo === 'all' ? 'every file' : `${m.appliesTo} files`})\n\n${m.question}\n\n${m.levels
         .map((level, score) => `- **${score}**: ${level}`)
-        .join('\n')}\n\nLook for: ${m.lookFor.join('; ')}.`,
+        .join('\n')}\n\nLook for: ${m.lookFor.join('; ')}.\n\nDo not count: ${m.skip.join('; ')}.`,
   ).join('\n\n');
 }

@@ -24,6 +24,7 @@ ${KINDS}
 - \`files\` lists the existing files the refactor will change, by their exact paths. The refactor may add new files on its side; do not list them.
 - Never propose a change of behaviour, of a public interface that callers outside the repo use, of serialized names, or of error messages that callers match.
 - Never propose to touch generated, vendored or frozen files: manifests, lockfiles, tool configs, CI.
+- Do not propose, however it looks: removing validation at a trust boundary (input, network, files, env, third-party APIs, persisted data); inlining a seam with two adapters, or one a framework or public API needs; injecting what the composition root creates; merging code that only looks alike but changes for different reasons; splitting a file for its size alone; deleting a symbol that string-built names, a decorator or registry, a script, CI or another repository may reach; renaming persisted values, serialized names, durable workflow names or migrations; rewording text a model reads (prompts, tool and schema descriptions); removing a TODO that names an issue, or logging that is output; replacing code with a new dependency.
 - Strength: \`strong\` when the friction is real and the change is safe; \`worth-exploring\` when it is real but the shape is open; \`speculative\` otherwise.`;
 
 export const REFACTORER = `You are the refactorer of Sloppatrol, a team of agents that makes a codebase cleaner without ever changing what it does.
