@@ -10,11 +10,11 @@ flowchart TB
   pull -->|green| survey["1 · Survey<br/>LLM · Surveyor records opportunities"]
   survey --> refactor["2 · Refactor<br/>LLM · Refactorer edits a worktree"]
   refactor --> gate["3 · Gate<br/>Code · guards, your checks, a planted bug"]
-  gate --> assess["4 · Prove the gain<br/>LLM · 3 blind assessors score before and after"]
+  gate --> assess["4 · Prove the gain<br/>LLM · 3 blind assessors, one at a time, score before and after"]
   assess --> review["5 · Review<br/>LLM · Reviewer, veto only"]
   review --> publish["6 · Publish<br/>Code · a PR with its proof"]
-  publish --> wait["Wait for the next cycle"]
-  wait -->|"next cycle"| pull
+  publish --> wait["Wait for the next cycle<br/>longer while nothing is found, at most 6 a day"]
+  wait -->|"machine not busy"| pull
 
   subgraph legend ["Legend"]
     direction LR

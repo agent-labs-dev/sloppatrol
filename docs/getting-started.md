@@ -24,14 +24,15 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
    npx sloppatrol check
    ```
 
-4. Start the patrol, and open the dashboard on http://127.0.0.1:4322:
+4. Start the patrol. Add `--dashboard` to follow it on http://127.0.0.1:4322:
 
    ```bash
-   npx sloppatrol           # a cycle every hour, with the dashboard
-   npx sloppatrol --once    # one cycle, then stop
+   npx sloppatrol               # a cycle every hour at most, slower while nothing is found
+   npx sloppatrol --dashboard   # the same, with the dashboard
+   npx sloppatrol --once        # one cycle, then exit
    ```
 
-5. Read the verified refactors in the dashboard. Then open their pull requests:
+5. Read the verified refactors with `npx sloppatrol status` or in the dashboard. Then open their pull requests:
 
    ```bash
    npx sloppatrol publish

@@ -79,7 +79,8 @@ agents:
 # Quality metrics an assessor scores blind; each refactor must raise its target metric.
 metrics: { enabled: true, panel: 20, tolerance: 0.5, judges: 3, parallel: 1 }
 github: { enabled: false, maxOpen: 3 }
-patrol: { intervalMinutes: 60, pull: origin/main }
+# How hard the patrol works: see docs/configuration.md. maxLoad defaults to the CPU count.
+patrol: { intervalMinutes: 60, pull: origin/main, nice: 10, backoff: true, maxCyclesPerDay: 6 }
 `.replace('prepare:\n  []', 'prepare: []'),
   );
   const instructions = join(dir, 'instructions.md');

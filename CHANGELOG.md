@@ -14,4 +14,16 @@ Sloppatrol is a patrol again, and only a patrol: a surveyor, a refactorer, a cod
 
 `sloppatrol review <pr|branch>` stays.
 
+The patrol is light by default, so it can stay on across many repos on a shared machine:
+
+- One agent process at a time: the three assessors of a proof, and the scoring sessions, run one after another (`metrics.parallel`, was 3).
+- Sloppatrol and every check and agent it starts run at niceness 10, and on Linux at I/O priority best-effort 7 (`patrol.nice`, 0 for normal priority).
+- `patrol.checks` names a fast check set for the patrol. The refactorer runs the checks at most once per attempt before the gate (`agents.refactorer.maxCheckRuns`).
+- A cycle waits while the 1-minute load average is above the CPU count (`patrol.maxLoad`), and at most 6 cycles start in any 24 hours (`patrol.maxCyclesPerDay`). After a cycle that finds nothing, the wait doubles, up to a day (`patrol.backoff`, `patrol.maxIntervalMinutes`).
+- Each cycle scores 20 new files, not 100 (`metrics.panel`).
+- **Breaking:** `sloppatrol` no longer serves the dashboard. Add `--dashboard`, or run `sloppatrol dashboard`.
+- `sloppatrol --once` runs one cycle and exits, and skips the cycle while the machine is busy or the daily cap is reached: it suits a scheduled CI job.
+
+[Configuration](docs/configuration.md#how-hard-the-patrol-works) lists the settings that bring back the old schedule.
+
 **Migration.** A repository that vendors `.sloppatrol/gate.py` or `.sloppatrol/agents.py`, or calls the action in CI, keeps working from its own copy, but nothing here updates it. Either drop the gate, its CI job and its `sloppatrol:` markers, or own the rules: move them under a path of your own and run them as an ordinary check. Delete `.sloppatrol/ledger.json` and `.sloppatrol/reports/`, which nothing reads now.

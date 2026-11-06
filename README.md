@@ -24,6 +24,8 @@ npx sloppatrol
 
 `npx sloppatrol` runs the patrol: survey, refactor, gate, prove, review, and publish, again and again. Verified refactors wait for `sloppatrol publish` until you turn on GitHub.
 
+The patrol is light by default, so it can stay on next to your own work. It runs one agent at a time, at low CPU and I/O priority. It skips a cycle while the machine is busy, waits longer after each cycle that finds nothing, and runs at most 6 cycles a day. `npx sloppatrol --once` runs one cycle and exits, for a scheduled CI job. [Configuration](docs/configuration.md#how-hard-the-patrol-works) shows how to change each limit.
+
 ### How the patrol runs
 
 ```mermaid
@@ -32,11 +34,11 @@ flowchart TB
   pull -->|green| survey["1 · Survey<br/>LLM · Surveyor records opportunities"]
   survey --> refactor["2 · Refactor<br/>LLM · Refactorer edits a worktree"]
   refactor --> gate["3 · Gate<br/>Code · guards, your checks, a planted bug"]
-  gate --> assess["4 · Prove the gain<br/>LLM · 3 blind assessors score before and after"]
+  gate --> assess["4 · Prove the gain<br/>LLM · 3 blind assessors, one at a time, score before and after"]
   assess --> review["5 · Review<br/>LLM · Reviewer, veto only"]
   review --> publish["6 · Publish<br/>Code · a PR with its proof"]
-  publish --> wait["Wait for the next cycle"]
-  wait -->|"next cycle"| pull
+  publish --> wait["Wait for the next cycle<br/>longer while nothing is found, at most 6 a day"]
+  wait -->|"machine not busy"| pull
 
   subgraph legend ["Legend"]
     direction LR
@@ -97,7 +99,7 @@ Sloppatrol scores only the files that the pull request or branch changes. It sco
 
 ## The dashboard
 
-`npx sloppatrol` serves a live dashboard on http://127.0.0.1:4322. The **Overview** tells you at a glance if the patrol is healthy: the checks on main, what waits for your decision, the code quality and its change, and the last cycle. Then it lists what needs attention, with the command to run next.
+`npx sloppatrol dashboard`, or `npx sloppatrol --dashboard` with the patrol, serves a live dashboard on http://127.0.0.1:4322. The **Overview** tells you at a glance if the patrol is healthy: the checks on main, what waits for your decision, the code quality and its change, and the last cycle. Then it lists what needs attention, with the command to run next.
 
 <p align="center">
   <img src="assets/dashboard.png" alt="The Overview of the dashboard on a demo project: a status band, the items that need attention with their commands, the agents, the code quality per metric, and the refactor results." width="100%">

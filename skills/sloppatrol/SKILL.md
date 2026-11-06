@@ -27,8 +27,8 @@ The CLI is the npm package `sloppatrol`. Run it with `npx sloppatrol@latest <com
 
 ## 3. Run it
 
-- `npx sloppatrol --once`: one cycle, with the dashboard on http://127.0.0.1:4322.
-- `npx sloppatrol`: the patrol, every `patrol.intervalMinutes`.
+- `npx sloppatrol --once`: one cycle, then exit. Add `--dashboard` to serve http://127.0.0.1:4322.
+- `npx sloppatrol`: the patrol, every `patrol.intervalMinutes` at most, slower while nothing is found, and never while the machine is busy.
 - `npx sloppatrol survey`, `npx sloppatrol refactor [id]`, `npx sloppatrol publish`: one step at a time.
 - `npx sloppatrol status`: the opportunities and the refactors.
 - `npx sloppatrol review <pr|branch>`: score only the files a pull request or branch changes, against its merge base. Exit 1 means a file lost 10 points or more.
