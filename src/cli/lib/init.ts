@@ -77,7 +77,7 @@ agents:
   refactorer: { maxPerCycle: 1, maxAttempts: 2 }
   reviewer: { enabled: true }
 # Quality metrics an assessor scores blind; each refactor must raise its target metric.
-metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3 }
+metrics: { enabled: true, panel: 20, tolerance: 0.5, judges: 3, parallel: 1 }
 github: { enabled: false, maxOpen: 3 }
 patrol: { intervalMinutes: 60, pull: origin/main }
 `.replace('prepare:\n  []', 'prepare: []'),

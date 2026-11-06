@@ -14,7 +14,7 @@ focus: [src/**]                             # where the surveyor looks (default:
 ignore: [src/generated/**]                  # what no agent may change
 uncheckedTests: [tests/e2e/**]              # tests no check runs: no refactor may change them
 guards: { maxFiles: 12, maxLines: 600 }
-metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3 }   # panel: files newly scored per cycle
+metrics: { enabled: true, panel: 20, tolerance: 0.5, judges: 3, parallel: 1 }   # panel: files newly scored per cycle; parallel: assessor sessions at once
 agents:
   surveyor: { minBacklog: 3, maxPerSurvey: 8 }
   refactorer: { maxPerCycle: 1, maxAttempts: 2, timeoutMinutes: 45, cleanupTimeoutMinutes: 15 }

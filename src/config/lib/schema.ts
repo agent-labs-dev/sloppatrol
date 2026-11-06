@@ -122,7 +122,7 @@ export const configSchema = z.object({
        * Files the assessor scores per cycle that have no valid score yet: the
        * most changed first, then the largest. Coverage grows until every file is scored.
        */
-      panel: z.number().int().positive().default(100),
+      panel: z.number().int().positive().default(20),
       /** How far a metric that is not a target may drop before the refactor is rejected, for judge noise. */
       tolerance: z.number().nonnegative().default(0.5),
       /** Independent assessor sessions per proof; each score is their mean. */
