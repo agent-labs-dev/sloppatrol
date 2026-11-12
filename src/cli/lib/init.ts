@@ -1,18 +1,39 @@
+import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { promisify } from 'node:util';
 import { CLI_AGENT_NAMES, CONFIG_DIR, CONFIG_FILE, ConfigError } from '../../config/index.js';
 
 /** A guess at the repo's checks from its manifests. The user confirms them. */
-async function guessChecks(root: string): Promise<{ prepare: string[]; checks: { name: string; run: string }[] }> {
+async function guessChecks(
+  root: string,
+): Promise<{ name?: string; prepare: string[]; checks: { name: string; run: string }[] }> {
   if (existsSync(join(root, 'package.json'))) {
-    const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as { scripts?: Record<string, string> };
-    const pm = existsSync(join(root, 'pnpm-lock.yaml')) ? 'pnpm' : existsSync(join(root, 'yarn.lock')) ? 'yarn' : 'npm';
-    const install = { pnpm: 'pnpm install --frozen-lockfile', yarn: 'yarn install --frozen-lockfile', npm: 'npm ci' }[
-      pm
-    ];
+    const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as {
+      name?: string;
+      packageManager?: string;
+      scripts?: Record<string, string>;
+    };
+    const declared = pkg.packageManager?.split('@')[0];
+    const pm =
+      declared === 'bun' || declared === 'pnpm' || declared === 'yarn' || declared === 'npm'
+        ? declared
+        : existsSync(join(root, 'bun.lock')) || existsSync(join(root, 'bun.lockb'))
+          ? 'bun'
+          : existsSync(join(root, 'pnpm-lock.yaml'))
+            ? 'pnpm'
+            : existsSync(join(root, 'yarn.lock'))
+              ? 'yarn'
+              : 'npm';
+    const install = {
+      bun: 'bun install --frozen-lockfile',
+      pnpm: 'pnpm install --frozen-lockfile',
+      yarn: 'yarn install --frozen-lockfile',
+      npm: 'npm ci',
+    }[pm];
     const scripts = ['typecheck', 'lint', 'test', 'build'].filter((name) => pkg.scripts?.[name]);
-    return { prepare: [install], checks: scripts.map((name) => ({ name, run: `${pm} run ${name}` })) };
+    return { name: pkg.name, prepare: [install], checks: scripts.map((name) => ({ name, run: `${pm} run ${name}` })) };
   }
   if (existsSync(join(root, 'go.mod')))
     return {
@@ -34,6 +55,20 @@ async function guessChecks(root: string): Promise<{ prepare: string[]; checks: {
   return { prepare: [], checks: [] };
 }
 
+async function repositoryName(root: string): Promise<string> {
+  const origin = await promisify(execFile)('git', ['remote', 'get-url', 'origin'], { cwd: root }).then(
+    ({ stdout }) =>
+      stdout
+        .trim()
+        .replace(/\.git\/?$/, '')
+        .split(/[/:]/)
+        .filter(Boolean)
+        .at(-1),
+    () => undefined,
+  );
+  return origin || basename(root);
+}
+
 export async function init(root: string, agent: string, log: (line: string) => void): Promise<void> {
   if (agent !== 'auto' && !CLI_AGENT_NAMES.includes(agent))
     throw new ConfigError(`--agent must be auto or one of ${CLI_AGENT_NAMES.join(', ')}`);
@@ -41,7 +76,7 @@ export async function init(root: string, agent: string, log: (line: string) => v
   const file = join(dir, CONFIG_FILE);
   if (existsSync(file)) throw new ConfigError(`${file} exists already.`);
   const guess = await guessChecks(root);
-  const name = basename(root).replace(/[^\w.-]+/g, '-') || 'app';
+  const name = guess.name || (await repositoryName(root));
   const checks = guess.checks.length
     ? guess.checks
         .map((c) => `  - name: ${c.name}\n    run: ${c.run}${c.name === 'test' ? '\n    tests: true' : ''}`)
@@ -53,7 +88,7 @@ export async function init(root: string, agent: string, log: (line: string) => v
     `# Sloppatrol: https://github.com/agent-labs-dev/sloppatrol
 # Commit this file and instructions.md. runs/ is local data.
 version: 1
-project: { name: ${name} }
+project: { name: ${JSON.stringify(name)} }
 # The agent every role runs on. auto: the first of claude, codex, opencode on PATH.
 # Or a model on an API key: { runtime: model, via: anthropic, model: claude-opus-5-5 }
 agent: ${agent}
