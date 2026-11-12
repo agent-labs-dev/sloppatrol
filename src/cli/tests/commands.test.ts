@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 
 describe('CLI command selection', () => {
   let cwd: string;
@@ -51,5 +52,40 @@ describe('CLI command selection', () => {
       expect(result.stdout).toContain('sloppatrol review <pr|ref>');
       expect(result.stderr).toBe('');
     }
+  });
+
+  it.each([
+    { lock: 'bun.lock', manager: undefined, expected: 'bun' },
+    { lock: 'bun.lockb', manager: undefined, expected: 'bun' },
+    { lock: 'package-lock.json', manager: 'bun@1.3.0', expected: 'bun' },
+    { lock: 'pnpm-lock.yaml', manager: 'yarn@4.0.0', expected: 'yarn' },
+  ])('initializes $expected from declared metadata with $lock', ({ lock, manager, expected }) => {
+    const project = mkdtempSync(join(cwd, 'worktree-trial-'));
+    writeFileSync(
+      join(project, 'package.json'),
+      JSON.stringify({
+        name: '@example/stable-project',
+        packageManager: manager,
+        scripts: { test: 'test-command' },
+      }),
+    );
+    writeFileSync(join(project, lock), '');
+    const result = run('--cwd', project, 'init');
+    expect(result.status, result.stderr).toBe(0);
+    const config = parse(readFileSync(join(project, '.sloppatrol/sloppatrol.yml'), 'utf8'));
+    expect(config.project.name).toBe('@example/stable-project');
+    expect(config.prepare).toEqual([`${expected} install --frozen-lockfile`]);
+    expect(config.checks).toEqual([{ name: 'test', run: `${expected} run test`, tests: true }]);
+  });
+
+  it('uses the remote repository name when no package name exists', () => {
+    const project = mkdtempSync(join(cwd, 'worktree-trial-'));
+    for (const args of [['init'], ['remote', 'add', 'origin', 'git@github.com:example/stable-project.git']]) {
+      expect(spawnSync('git', args, { cwd: project }).status).toBe(0);
+    }
+    const result = run('--cwd', project, 'init');
+    expect(result.status, result.stderr).toBe(0);
+    const config = parse(readFileSync(join(project, '.sloppatrol/sloppatrol.yml'), 'utf8'));
+    expect(config.project.name).toBe('stable-project');
   });
 });
