@@ -17,7 +17,7 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
 
 2. Make `checks` the commands that prove behaviour in your repo: typecheck, lint, tests, build. Mark the test commands with `tests: true`. Put the install command in `prepare`. Checks run in a fresh checkout that holds no file git ignores, so `prepare` also carries in any cache they read: [Configuration](configuration.md#where-the-checks-run) shows each setting.
 
-3. Check the setup. `doctor` shows the agent of each role, the rule files it found, and what is missing. `check` runs your checks on `patrol.pull`, and they must pass. Add `--ref HEAD` to check your branch before it merges:
+3. Check the setup. `doctor` shows the agent of each role, the rule files it found, and what is missing. `check` runs your checks on `patrol.pull`, and they must pass. Add `--ref HEAD` to run them against your branch's commit before it merges:
 
    ```bash
    npx sloppatrol doctor

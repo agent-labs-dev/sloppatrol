@@ -44,7 +44,8 @@ export async function checkoutBase(
 /**
  * Checks out the patrolled ref and runs the checks there, once per commit.
  * The checks are the oracle: on a red commit nothing can be verified.
- * `ref` checks another commit, e.g. `HEAD` for a branch before it merges.
+ * `ref` checks another commit, e.g. `HEAD` for a branch before it merges; the
+ * checks are still the ones in the working tree's profile.
  */
 export async function openBase(
   loaded: LoadedConfig,

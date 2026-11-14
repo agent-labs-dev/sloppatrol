@@ -5,7 +5,7 @@ import { createRuntime, finishTool } from '../../agents/index.js';
 import { loadConfig } from '../../config/index.js';
 import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
-import { cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
+import { checkNow, cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
 import { agentCommand, fixtureRepo, gitIn, read, script, scriptQueue } from './fixture.js';
 
@@ -302,8 +302,8 @@ describe('a patrol', () => {
     const sha = gitIn(repo, 'rev-parse', 'HEAD');
     gitIn(repo, 'checkout', '-q', 'main');
 
-    expect((await openBase(await loadConfig(repo), deps)).blocked).toBeUndefined();
-    const base = await openBase(await loadConfig(repo), deps, { ref: 'feature' });
+    expect((await checkNow(await loadConfig(repo), deps)).blocked).toBeUndefined();
+    const base = await checkNow(await loadConfig(repo), deps, 'feature');
 
     expect(base.sha).toBe(sha);
     expect(base.blocked).toBe(

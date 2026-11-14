@@ -46,7 +46,7 @@ Every check also has a `timeoutMinutes` (20 by default). The checks run once on 
 
 ## Where the checks run
 
-The checks on the patrolled commit run in a fresh, detached git worktree under `.sloppatrol/runs/checkouts/<sha>`, and a refactor runs in its own worktree under `.sloppatrol/runs/worktrees/`. Both hold the committed files only: nothing that git ignores. A check that reads an ignored cache (a pinned download, a generated input) fails there although it passes in your own checkout. `prepare` runs in each fresh checkout and worktree before the checks, so carry such files in from your own checkout:
+The checks on the patrolled commit run in a fresh, detached git worktree under `.sloppatrol/runs/checkouts/<sha>`, and a refactor runs in its own worktree under `.sloppatrol/runs/worktrees/`. Both hold the committed files only: nothing that git ignores. The profile itself is always the one in your working tree, for `check --ref` too: `--ref` chooses only the commit whose files the checks run against. A check that reads an ignored cache (a pinned download, a generated input) fails there although it passes in your own checkout. `prepare` runs in each fresh checkout and worktree before the checks, so carry such files in from your own checkout:
 
 ```yaml
 prepare:
