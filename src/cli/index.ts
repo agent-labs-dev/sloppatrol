@@ -111,7 +111,8 @@ async function main(args: string[]): Promise<number> {
       return (await doctor(loaded, out)) ? EXIT.ok : EXIT.config;
     case 'check': {
       stopOnSignal(store);
-      const base = await openBase(loaded, deps, { recheck: true });
+      const ref = strFlag(flags, 'ref');
+      const base = await openBase(loaded, deps, { recheck: true, ref });
       for (const r of base.checks.results) out(`${r.ok ? '✓' : '✗'} ${r.name} (${(r.durationMs / 1000).toFixed(1)}s)`);
       if (base.blocked) {
         const failed = base.checks.results.find((r) => !r.ok);
@@ -119,7 +120,12 @@ async function main(args: string[]): Promise<number> {
         out(`\n${base.blocked}`);
         return EXIT.failed;
       }
-      out(`\nThe checks pass on ${base.sha.slice(0, 10)}. Sloppatrol can verify refactors.`);
+      out(`\nThe checks pass on ${base.sha.slice(0, 10)}.`);
+      out(
+        ref
+          ? `These are the checks at ${ref}. The patrol still requires them on ${loaded.config.patrol.pull}.`
+          : 'Sloppatrol can verify refactors.',
+      );
       return EXIT.ok;
     }
     case 'survey': {

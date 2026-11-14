@@ -29,6 +29,8 @@ Read
 
 `sloppatrol review <pr|ref>` scores only the files that a pull request or a branch changes. A number, `#42` or a GitHub pull request URL names a pull request; `gh` gives its head and its base branch. Any other argument is a git ref, and it compares with `patrol.pull`. `--base <ref>` sets another base. Sloppatrol scores each changed file at the head and at the merge base, in checkouts under `.sloppatrol/runs/reviews/`, and removes them after. It uses the same score cache as `sloppatrol score`. The command prints a table, worst change first, and the line-weighted total. It changes no code, runs no checks, and posts nothing. It exits 1 when a file loses 10 points or more.
 
+`sloppatrol check` runs your checks on `patrol.pull`, in a fresh worktree of that commit. `--ref <ref>` checks another commit instead, for example `--ref HEAD` to try the checks and the scripts they run on your branch before it merges; it names a commit, so commit the change first. The worktree holds the committed files only, nothing that git ignores: [Configuration](configuration.md) shows how `prepare` carries an ignored cache in.
+
 `sloppatrol` runs without the dashboard; add `--dashboard` to serve it. `sloppatrol --once` runs one cycle and exits, and skips it (exit 0) while the machine is busy or the day's cycles are used up, so a scheduled job can call it as often as it likes.
 
 Add `--cwd <dir>` to run a command in another repo. `sloppatrol --help` shows the usage.

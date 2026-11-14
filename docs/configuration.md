@@ -44,6 +44,18 @@ patrol:
 
 Every check also has a `timeoutMinutes` (20 by default). The checks run once on each new commit of `patrol.pull`, once when the refactorer asks, and once in the gate; a tests refactor adds one run for its planted bug (two for `characterize`). A source refactor adds up to two runs of the test checks per `mutation.sourceBugs`: one on `main`, and one on the change when the tests on `main` catch the bug. With the default of 2 that is at most four runs, so on a repo with slow tests lower it, or set it to 0. Use `patrol.checks` to leave a slow tier out; add its tests to `uncheckedTests` so no refactor changes them.
 
+## Where the checks run
+
+The checks on the patrolled commit run in a fresh, detached git worktree under `.sloppatrol/runs/checkouts/<sha>`, and a refactor runs in its own worktree under `.sloppatrol/runs/worktrees/`. Both hold the committed files only: nothing that git ignores. A check that reads an ignored cache (a pinned download, a generated input) fails there although it passes in your own checkout. `prepare` runs in each fresh checkout and worktree before the checks, so carry such files in from your own checkout:
+
+```yaml
+prepare:
+  - mkdir -p tools/.cache
+  - cp -a "$(git rev-parse --path-format=absolute --git-common-dir)/../tools/.cache/." tools/.cache/
+```
+
+`git rev-parse --git-common-dir` names the repository's `.git` directory, so the step also finds your checkout from a worktree. A cache you can rebuild is often simpler to rebuild in `prepare`.
+
 An assessor session waits on its model, not the CPU: three at once used about 1.2 GB and a fifth of one core in total, scoring about 14 s a file against 46 s for one at a time. On a machine short of memory, set `metrics: { panel: 20, parallel: 1 }`.
 
 For the earlier, heavier schedule, set `agents.refactorer.maxCheckRuns: 20` and `patrol: { nice: 0, backoff: false, maxCyclesPerDay: 0, maxLoad: 0 }`.
@@ -51,6 +63,8 @@ For the earlier, heavier schedule, set `agents.refactorer.maxCheckRuns: 20` and 
 Every role also takes `maxSteps`, `timeoutMinutes` and `budgetUsd` (model runtime). Pull requests open with your `gh` login.
 
 `cleanup` runs in the refactorer's worktree after its session and before the gate: deterministic, mechanical tidy-up such as removing an import the edit made unused or formatting. A failing cleanup command is logged and left to the checks, so it never decides a verdict by itself. It is not a check and never weakens one.
+
+`prepare` and `cleanup` take each command as a string, or as `{ run: <command> }` as Speedpatrol writes them; both forms run the same command.
 
 A refactorer session that reaches `timeoutMinutes` hands its worktree to one completion session (`cleanupTimeoutMinutes`, `cleanupMaxSteps`) that finishes the change and removes what it left unused, instead of letting the gate reject a half-finished edit.
 

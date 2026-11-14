@@ -27,6 +27,7 @@ Flags
   --port <n>        The dashboard port (default 4322)
   --files <n>       score: score at most <n> more files in this run
   --base <ref>      review: compare with <ref> (default: the pull request's base, else patrol.pull)
+  --ref <ref>       check: run the checks on <ref> instead (default: patrol.pull)
   --dashboard       Patrol with the dashboard
   --no-dashboard    score: print the scorecard without the dashboard
   --no-open         score: do not open the browser

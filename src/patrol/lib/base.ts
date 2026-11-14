@@ -26,10 +26,14 @@ export type Base = Checkout & {
 };
 
 /** Checks out the patrolled ref, and removes the checkouts of older commits. */
-export async function checkoutBase(loaded: LoadedConfig, deps: PatrolDeps): Promise<Checkout & { fresh: boolean }> {
-  const { config, source } = loaded;
-  const sha = await resolveRef(source, config.patrol.pull);
-  if (!sha) throw new Error(`Cannot resolve ${config.patrol.pull} in ${source}.`);
+export async function checkoutBase(
+  loaded: LoadedConfig,
+  deps: PatrolDeps,
+  ref = loaded.config.patrol.pull,
+): Promise<Checkout & { fresh: boolean }> {
+  const { source } = loaded;
+  const sha = await resolveRef(source, ref);
+  if (!sha) throw new Error(`Cannot resolve ${ref} in ${source}.`);
   const dir = deps.store.path('checkouts', sha.slice(0, 12));
   await pruneCheckouts(source, deps.store.path('checkouts'), dir);
   const fresh = !existsSync(dir);
@@ -40,18 +44,20 @@ export async function checkoutBase(loaded: LoadedConfig, deps: PatrolDeps): Prom
 /**
  * Checks out the patrolled ref and runs the checks there, once per commit.
  * The checks are the oracle: on a red commit nothing can be verified.
+ * `ref` checks another commit, e.g. `HEAD` for a branch before it merges.
  */
 export async function openBase(
   loaded: LoadedConfig,
   deps: PatrolDeps,
-  options: { recheck?: boolean } = {},
+  options: { recheck?: boolean; ref?: string } = {},
 ): Promise<Base> {
   const { config } = loaded;
   const { store, log } = deps;
-  const { sha, dir, fresh } = await checkoutBase(loaded, deps);
+  const ref = options.ref ?? config.patrol.pull;
+  const { sha, dir, fresh } = await checkoutBase(loaded, deps, ref);
   let checks = options.recheck ? undefined : await store.baseCheckRun(sha, checksKey(config.checks));
   if (!checks) {
-    log(`checking ${config.patrol.pull} at ${sha.slice(0, 10)}`);
+    log(`checking ${ref} at ${sha.slice(0, 10)}`);
     await store.setStatus({ role: 'gate', state: 'running', detail: `Checks on ${sha.slice(0, 10)}` });
     if (fresh || options.recheck) await prepare(config.prepare, dir, log);
     checks = await runRecordedChecks(store, { purpose: 'base', sha }, config.checks, dir, log);

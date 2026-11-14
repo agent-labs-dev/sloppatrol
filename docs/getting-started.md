@@ -15,13 +15,14 @@ You need Node 22 or later, `git`, and an agent CLI: [Claude Code](https://claude
      runs/              # opportunities, refactors, check runs, scores, sessions: git ignores it
    ```
 
-2. Make `checks` the commands that prove behaviour in your repo: typecheck, lint, tests, build. Mark the test commands with `tests: true`. Put the install command in `prepare`. [Configuration](configuration.md) shows each setting.
+2. Make `checks` the commands that prove behaviour in your repo: typecheck, lint, tests, build. Mark the test commands with `tests: true`. Put the install command in `prepare`. Checks run in a fresh checkout that holds no file git ignores, so `prepare` also carries in any cache they read: [Configuration](configuration.md#where-the-checks-run) shows each setting.
 
-3. Check the setup. `doctor` shows the agent of each role, the rule files it found, and what is missing. `check` runs your checks on `main`, and they must pass:
+3. Check the setup. `doctor` shows the agent of each role, the rule files it found, and what is missing. `check` runs your checks on `patrol.pull`, and they must pass. Add `--ref HEAD` to check your branch before it merges:
 
    ```bash
    npx sloppatrol doctor
    npx sloppatrol check
+   npx sloppatrol check --ref HEAD
    ```
 
 4. Start the patrol. Add `--dashboard` to follow it on http://127.0.0.1:4322:
