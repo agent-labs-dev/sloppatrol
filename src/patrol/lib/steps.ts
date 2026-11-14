@@ -16,6 +16,11 @@ async function readyBase(loaded: LoadedConfig, deps: PatrolDeps): Promise<Base> 
   return base;
 }
 
+/** Runs the checks now on the patrolled ref, or on `ref`: the oracle for that commit. */
+export function checkNow(loaded: LoadedConfig, deps: PatrolDeps, ref?: string): Promise<Base> {
+  return exclusive(loaded, deps, () => openBase(loaded, deps, { recheck: true, ref }));
+}
+
 /** Runs one survey now, whatever the backlog. */
 export function surveyNow(loaded: LoadedConfig, deps: PatrolDeps): Promise<SurveyResult> {
   return exclusive(loaded, deps, async () => {
