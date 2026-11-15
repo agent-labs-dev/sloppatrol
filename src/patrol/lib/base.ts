@@ -36,8 +36,7 @@ export async function checkoutBase(
   if (!sha) throw new Error(`Cannot resolve ${ref} in ${source}.`);
   const dir = deps.store.workspacePath('checkouts', sha.slice(0, 12));
   await pruneCheckouts(source, deps.store.workspacePath('checkouts'), dir);
-  const fresh = !existsSync(dir);
-  await checkout(source, dir, sha);
+  const fresh = await checkout(source, dir, sha);
   return { sha, dir, fresh };
 }
 
@@ -57,10 +56,10 @@ export async function openBase(
   const ref = options.ref ?? config.patrol.pull;
   const { sha, dir, fresh } = await checkoutBase(loaded, deps, ref);
   let checks = options.recheck ? undefined : await store.baseCheckRun(sha, checksKey(config.checks));
+  if (fresh || options.recheck) await prepare(config.prepare, dir, log);
   if (!checks) {
     log(`checking ${ref} at ${sha.slice(0, 10)}`);
     await store.setStatus({ role: 'gate', state: 'running', detail: `Checks on ${sha.slice(0, 10)}` });
-    if (fresh || options.recheck) await prepare(config.prepare, dir, log);
     checks = await runRecordedChecks(store, { purpose: 'base', sha }, config.checks, dir, log);
   }
   if (checks.status === 'passed') {

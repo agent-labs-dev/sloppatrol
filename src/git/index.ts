@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { realpath, rm } from 'node:fs/promises';
 import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
@@ -24,10 +25,22 @@ export async function resolveRef(source: string, ref: string): Promise<string | 
   return tryGit(source, ['rev-parse', '--verify', `${ref}^{commit}`]);
 }
 
-/** A detached, read-only checkout of `sha`, reused when it exists. */
-export async function checkout(source: string, dir: string, sha: string): Promise<void> {
-  if (existsSync(dir)) return;
+/** A detached checkout, reused only when it still belongs to this repository and commit. */
+export async function checkout(source: string, dir: string, sha: string): Promise<boolean> {
+  if (existsSync(dir)) {
+    const common = async (path: string) => {
+      const value = await tryGit(path, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
+      return value ? realpath(value).catch(() => undefined) : undefined;
+    };
+    const sourceCommon = await common(source);
+    if (sourceCommon && sourceCommon === (await common(dir)) && (await tryGit(dir, ['rev-parse', 'HEAD'])) === sha)
+      return false;
+    await tryGit(source, ['worktree', 'remove', '--force', dir]);
+    await rm(dir, { recursive: true, force: true });
+    await git(source, ['worktree', 'prune']);
+  }
   await git(source, ['worktree', 'add', '--detach', dir, sha]);
+  return true;
 }
 
 /** A worktree on a new branch, for an agent to edit. */
