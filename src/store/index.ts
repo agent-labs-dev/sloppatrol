@@ -23,9 +23,9 @@ export type PatrolState = {
   cycles: number;
 };
 
-function externalRunsRoot(source: string): string {
+function externalRunsRoot(source: string, configDir: string): string {
   const cache = process.env.XDG_CACHE_HOME || join(homedir(), '.cache');
-  const identity = createHash('sha256').update(source).digest('hex').slice(0, 12);
+  const identity = createHash('sha256').update(`${source}\0${configDir}`).digest('hex').slice(0, 12);
   return join(cache, 'sloppatrol', `${basename(source)}-${identity}`);
 }
 
@@ -39,7 +39,7 @@ export class Store {
 
   constructor(configDir: string, source?: string) {
     this.root = join(configDir, 'runs');
-    this.workspaceRoot = source ? externalRunsRoot(source) : this.root;
+    this.workspaceRoot = source ? externalRunsRoot(source, configDir) : this.root;
   }
 
   path(...parts: string[]): string {
