@@ -197,12 +197,14 @@ describe('a patrol', () => {
     const retryRefactor = { ...migrated, worktree: retryLegacy };
     cpSync(migrated.worktree, retryLegacy, { recursive: true });
     gitIn(loaded.source, 'worktree', 'repair', retryLegacy);
+    rmSync(join(migrated.worktree, 'src', 'price.js'));
     await deps.store.saveRefactor(retryRefactor);
     await cycle(loaded, deps);
     expect(existsSync(retryLegacy)).toBe(false);
     expect((await deps.store.listRefactors()).find((item) => item.id === refactored.id)?.worktree).toBe(
       deps.store.workspacePath('worktrees', refactored.id),
     );
+    expect(read(migrated.worktree, 'src/price.js')).toContain('items.reduce(');
 
     github.setState(pr.url, 'merged');
     script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);

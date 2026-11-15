@@ -29,9 +29,11 @@ async function migrateWorktree(loaded: LoadedConfig, deps: PatrolDeps, refactor:
   const destination = deps.store.workspacePath('worktrees', refactor.id);
   if (resolve(destination) === resolve(legacy)) return;
   await mkdir(dirname(destination), { recursive: true });
-  if (!existsSync(destination)) {
-    await cp(legacy, destination, { recursive: true, force: false, errorOnExist: true });
-  }
+  // The legacy checkout is the complete source of truth. A destination left
+  // by an interrupted copy may have valid Git metadata but missing files, so
+  // never repair it in place or delete the only complete checkout.
+  if (existsSync(destination)) await rm(destination, { recursive: true, force: true });
+  await cp(legacy, destination, { recursive: true, force: false, errorOnExist: true });
   await git(loaded.source, ['worktree', 'repair', destination]);
   refactor.worktree = destination;
   await deps.store.saveRefactor(refactor);
