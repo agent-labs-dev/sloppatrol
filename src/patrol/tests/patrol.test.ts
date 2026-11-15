@@ -1,4 +1,4 @@
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createRuntime, finishTool } from '../../agents/index.js';
@@ -79,6 +79,24 @@ describe('a patrol', () => {
     const deps: PatrolDeps = { store: new Store(loaded.dir), github: fake, runtimeFor: createRuntime, log: () => {} };
     return { repo, loaded, deps, github: fake };
   }
+
+  it('removes legacy and unregistered source copies when moving checkouts outside the repo', async () => {
+    const { repo, loaded, deps } = await setUp(false);
+    deps.store = new Store(loaded.dir, loaded.source);
+    repos.push(deps.store.workspaceRoot);
+    const legacy = deps.store.path('checkouts', 'legacy');
+    gitIn(repo, 'worktree', 'add', '--detach', legacy, 'main');
+    const stale = deps.store.workspacePath('checkouts', 'unregistered');
+    mkdirSync(stale, { recursive: true });
+    writeFileSync(join(stale, 'residue'), 'old source');
+
+    const base = await openBase(loaded, deps);
+
+    expect(base.checks.status).toBe('passed');
+    expect(existsSync(legacy)).toBe(false);
+    expect(existsSync(stale)).toBe(false);
+    expect(base.dir.startsWith(deps.store.workspaceRoot)).toBe(true);
+  });
 
   it('fails a CLI session that exits cleanly without finishing', async () => {
     const { repo } = await setUp();

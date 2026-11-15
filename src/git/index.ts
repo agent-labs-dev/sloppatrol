@@ -50,6 +50,7 @@ export async function addWorktree(source: string, dir: string, branch: string, s
 
 export async function removeWorktree(source: string, dir: string, branch?: string): Promise<void> {
   await tryGit(source, ['worktree', 'remove', '--force', dir]);
+  await rm(dir, { recursive: true, force: true });
   if (branch) await tryGit(source, ['branch', '-D', branch]);
 }
 
