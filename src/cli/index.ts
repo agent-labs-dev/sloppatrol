@@ -45,7 +45,7 @@ function version(): string {
 async function wire(cwd: string) {
   const loaded = await loadConfig(cwd);
   const deps: PatrolDeps = {
-    store: new Store(loaded.dir),
+    store: new Store(loaded.dir, loaded.source),
     github: new GhCliGitHub(loaded.source, loaded.config.github.repo),
     runtimeFor: createRuntime,
     log,

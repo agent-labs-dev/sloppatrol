@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { appendFile, mkdir, readdir, readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { homedir } from 'node:os';
+import { basename, dirname, join } from 'node:path';
 import type {
   AgentEvent,
   AgentStatus,
@@ -21,15 +23,21 @@ export type PatrolState = {
   cycles: number;
 };
 
+function externalRunsRoot(source: string): string {
+  const cache = process.env.XDG_CACHE_HOME || join(homedir(), '.cache');
+  const identity = createHash('sha256').update(source).digest('hex').slice(0, 12);
+  return join(cache, 'sloppatrol', `${basename(source)}-${identity}`, 'runs');
+}
+
 /**
- * All Sloppatrol data is plain JSON under `.sloppatrol/runs/`, so a person,
- * an agent and a dashboard can all read it.
+ * All Sloppatrol data is plain JSON under the user's cache, so checkouts and
+ * worktrees never become part of the repository tree that tools lint.
  */
 export class Store {
   readonly root: string;
 
-  constructor(configDir: string) {
-    this.root = join(configDir, 'runs');
+  constructor(configDir: string, source?: string) {
+    this.root = source ? externalRunsRoot(source) : join(configDir, 'runs');
   }
 
   path(...parts: string[]): string {

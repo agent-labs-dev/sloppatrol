@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { promisify } from 'node:util';
 import { CLI_AGENT_NAMES, CONFIG_DIR, CONFIG_FILE, ConfigError } from '../../config/index.js';
@@ -52,16 +52,6 @@ async function guessChecks(
       ],
     };
   if (existsSync(join(root, 'pyproject.toml'))) return { prepare: [], checks: [{ name: 'test', run: 'pytest -q' }] };
-  const luaTests = (await readdir(join(root, 'tests')).catch(() => [])).filter((file) => file.endsWith('_spec.lua'));
-  if (luaTests.length > 0 || (await readdir(root)).some((file) => file.endsWith('.toc')))
-    return {
-      prepare: [],
-      checks: [
-        { name: 'format', run: 'stylua --check .' },
-        { name: 'lint', run: 'luacheck .' },
-        { name: 'test', run: 'for spec in tests/*_spec.lua; do luajit "$spec" || exit 1; done' },
-      ],
-    };
   return { prepare: [], checks: [] };
 }
 
@@ -91,12 +81,12 @@ export async function init(root: string, agent: string, log: (line: string) => v
     ? guess.checks
         .map((c) => `  - name: ${c.name}\n    run: ${c.run}${c.name === 'test' ? '\n    tests: true' : ''}`)
         .join('\n')
-    : '  - name: test\n    run: echo "set your test command" && exit 1\n    tests: true';
+    : '  []';
   await mkdir(dir, { recursive: true });
   await writeFile(
     file,
     `# Sloppatrol: https://github.com/agent-labs-dev/sloppatrol
-# Commit this file and instructions.md. runs/ is local data.
+# Commit this file and instructions.md. Run data is kept in the user's cache.
 version: 1
 project: { name: ${JSON.stringify(name)} }
 # The agent every role runs on. auto: the first of claude, codex, opencode on PATH.
@@ -139,5 +129,9 @@ patrol: { intervalMinutes: 60, pull: origin/main, nice: 10, backoff: true, maxCy
   if (!ignored.includes('.sloppatrol/runs'))
     await appendFile(gitignore, `${ignored && !ignored.endsWith('\n') ? '\n' : ''}.sloppatrol/runs/\n`);
   log(`Created ${file}.`);
-  log('Next: run `sloppatrol doctor`, then `sloppatrol check`, then `sloppatrol`.');
+  log(
+    guess.checks.length
+      ? 'Next: run `sloppatrol doctor`, then `sloppatrol check`, then `sloppatrol`.'
+      : 'No checks were detected. Edit checks in sloppatrol.yml before running `sloppatrol check` or `sloppatrol`.',
+  );
 }

@@ -88,4 +88,14 @@ describe('CLI command selection', () => {
     const config = parse(readFileSync(join(project, '.sloppatrol/sloppatrol.yml'), 'utf8'));
     expect(config.project.name).toBe('stable-project');
   });
+
+  it('leaves checks empty and explains the next step when no manifest is known', () => {
+    const project = mkdtempSync(join(cwd, 'worktree-trial-'));
+    expect(spawnSync('git', ['init'], { cwd: project }).status).toBe(0);
+    const result = run('--cwd', project, 'init');
+    expect(result.status, result.stderr).toBe(0);
+    const config = parse(readFileSync(join(project, '.sloppatrol/sloppatrol.yml'), 'utf8'));
+    expect(config.checks).toEqual([]);
+    expect(result.stderr).toContain('No checks were detected');
+  });
 });
