@@ -5,7 +5,7 @@ import { createRuntime, finishTool } from '../../agents/index.js';
 import { loadConfig } from '../../config/index.js';
 import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
-import { cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
+import { checkNow, cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
 import { agentCommand, fixtureRepo, gitIn, read, script, scriptQueue } from './fixture.js';
 
@@ -289,6 +289,26 @@ describe('a patrol', () => {
     writeFileSync(file, readFileSync(file, 'utf8').replace('run: node --test', 'run: node --test --test-reporter=dot'));
     await openBase(await loadConfig(repo), deps);
     expect(await baseRuns()).toBe(2);
+  });
+
+  it('checks another commit when a ref is given, before a branch merges', async () => {
+    const { repo, deps } = await setUp();
+    gitIn(repo, 'checkout', '-q', '-b', 'feature');
+    writeFileSync(
+      join(repo, 'test/price.test.js'),
+      "import { test } from 'node:test';\ntest('red', () => { throw new Error('red'); });\n",
+    );
+    gitIn(repo, 'commit', '-q', '-am', 'break the tests on the branch');
+    const sha = gitIn(repo, 'rev-parse', 'HEAD');
+    gitIn(repo, 'checkout', '-q', 'main');
+
+    expect((await checkNow(await loadConfig(repo), deps)).blocked).toBeUndefined();
+    const base = await checkNow(await loadConfig(repo), deps, 'feature');
+
+    expect(base.sha).toBe(sha);
+    expect(base.blocked).toBe(
+      `The check test fails on ${sha.slice(0, 10)}: without a green oracle no refactor can be verified.`,
+    );
   });
 
   it('runs only the checks patrol.checks names, and the refactorer only maxCheckRuns times', async () => {

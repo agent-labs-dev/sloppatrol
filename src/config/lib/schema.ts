@@ -35,6 +35,22 @@ const limits = {
   budgetUsd: z.number().positive().optional(),
 };
 
+/**
+ * A command as a plain string, or as Speedpatrol's `{ run: <command> }`: both
+ * profiles sit side by side in the same repos, so the two shapes are accepted
+ * and stored the same way.
+ */
+const commandSchema = z.union(
+  [
+    z.string().min(1),
+    z
+      .object({ run: z.string().min(1) })
+      .strict()
+      .transform((entry) => entry.run),
+  ],
+  { errorMap: () => ({ message: 'expected a command string such as "bun install", or { run: <command> }' }) },
+);
+
 const checkSchema = z.object({
   name: z.string().regex(/^[a-z0-9][a-z0-9._-]*$/, 'lowercase letters, digits, dot, dash and underscore'),
   run: z.string().min(1),
@@ -50,7 +66,7 @@ export const configSchema = z
     /** The runtime of every role, unless a role sets its own `use`. */
     agent: runtimeSchema.default('auto'),
     /** Runs once in each fresh checkout or worktree, before the checks: install, codegen. */
-    prepare: z.array(z.string()).default([]),
+    prepare: z.array(commandSchema).default([]),
     /**
      * Mechanical tidy-up commands run in the refactorer's worktree after its
      * session and before the gate: remove the imports and helpers an edit left
@@ -58,7 +74,7 @@ export const configSchema = z
      * that ran out of time never reaches a check. A failing command is logged
      * and left to the checks: cleanup never decides the verdict.
      */
-    cleanup: z.array(z.string()).default([]),
+    cleanup: z.array(commandSchema).default([]),
     /**
      * The oracle. Each check must pass on the patrolled commit before
      * Sloppatrol starts work, and again on every refactor.
