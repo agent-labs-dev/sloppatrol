@@ -117,6 +117,8 @@ describe('a patrol', () => {
 
   it('surveys, refactors, verifies and opens a pull request; a merge finishes the opportunity', async () => {
     const { loaded, deps, github } = await setUp();
+    deps.store = new Store(loaded.dir, loaded.source);
+    repos.push(deps.store.workspaceRoot);
     script('surveyor', [
       { tool: 'get_census' },
       { tool: 'record_opportunity', input: { ...SIMPLIFY, kind: 'replace-mock' }, mustSucceed: false },
@@ -173,6 +175,20 @@ describe('a patrol', () => {
     expect(await deps.store.listCycles()).toMatchObject([
       { sha: refactored.baseSha, surveyed: 1, refactors: [{ id: refactored.id, status: 'verified' }], published: 1 },
     ]);
+
+    const legacy = deps.store.path('worktrees', refactored.id);
+    mkdirSync(join(legacy, '..'), { recursive: true });
+    const { cpSync } = await import('node:fs');
+    cpSync(refactored.worktree, legacy, { recursive: true });
+    gitIn(loaded.source, 'worktree', 'repair', legacy);
+    rmSync(refactored.worktree, { recursive: true });
+    await deps.store.saveRefactor({ ...refactored, status: 'published', prUrl: pr.url, worktree: legacy });
+    script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);
+    await cycle(loaded, deps);
+    expect(existsSync(legacy)).toBe(false);
+    const migrated = (await deps.store.listRefactors())[0]!;
+    expect(migrated.worktree).toBe(deps.store.workspacePath('worktrees', refactored.id));
+    expect(gitIn(migrated.worktree, 'show', 'HEAD:src/price.js')).toContain('items.reduce(');
 
     github.setState(pr.url, 'merged');
     script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);
