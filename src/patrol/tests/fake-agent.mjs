@@ -44,7 +44,7 @@ while (steps.length) {
       const unit = (await client.callTool({ name: 'get_unit', arguments: { label } })).content[0].text;
       const rule = step.assess.find((r) => !r.contains || unit.includes(r.contains));
       const scores = Object.fromEntries(
-        metrics.split(', ').map((m) => [m, { score: rule.score, evidence: 'scripted' }]),
+        metrics.split(', ').map((m) => [m, { score: rule.scores?.[m] ?? rule.score, evidence: 'scripted' }]),
       );
       await client.callTool({ name: 'score_unit', arguments: { label, scores } });
     }

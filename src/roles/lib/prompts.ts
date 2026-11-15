@@ -44,7 +44,7 @@ Hard rules:
 - Never add a suppression, a skipped or focused test, \`any\`, or a coverage exclusion. Never edit manifests, lockfiles, tool configs or CI.
 - Never remove a test case. Tests may move or change shape; every behaviour they pinned stays pinned.
 - Do not commit, push or open a pull request: Sloppatrol verifies and publishes.
-- After the checks, an assessor scores the changed files before and after against the metrics rubric, without knowing which is which. The opportunity's target metrics must improve, and no other metric may get worse.
+- After the checks, an assessor scores the changed files before and after against the metrics rubric, without knowing which is which. At least one of the opportunity's target metrics must improve, and no scored metric may drop by more than the configured tolerance.
 - If the opportunity turns out wrong or unsafe, change nothing and call finish with the reason.`;
 
 export const REFACTORER_COMPLETE = `Your previous session on this change ran out of time and was stopped. The edits you had made are still in the worktree.

@@ -373,6 +373,29 @@ describe('a patrol', () => {
     expect(await deps.store.listRefactors()).toEqual([]);
   });
 
+  it.each([
+    { scores: { simplicity: 3, clarity: 2 }, status: 'verified' },
+    { scores: { simplicity: 2, clarity: 2 }, status: 'rejected' },
+    { scores: { simplicity: 3, clarity: 1 }, status: 'rejected' },
+  ])('requires one target gain and no collateral drop: $scores', async ({ scores, status }) => {
+    const { loaded, deps } = await setUp(false);
+    await deps.store.saveOpportunity(opportunity({ metrics: ['simplicity', 'clarity'] }));
+    script('refactorer', [
+      { edit: { file: 'src/price.js', from: LOOP, to: REDUCE } },
+      { tool: 'finish', input: { summary: 'reduce.' } },
+    ]);
+    script('assessor', [
+      { assess: [{ contains: 'reduce(', score: 2, scores }, { score: 2 }] },
+      { tool: 'finish', input: { summary: 'Scored.' } },
+    ]);
+    script('reviewer', approve);
+
+    const refactor = await refactorNow(loaded, deps);
+
+    expect(refactor.status, refactor.reason).toBe(status);
+    expect(refactor.proof?.improvement?.improved).toBe(status === 'verified');
+  });
+
   it('rejects a change the blind assessor does not score better', async () => {
     const { loaded, deps } = await setUp(false);
     await deps.store.saveOpportunity(opportunity());

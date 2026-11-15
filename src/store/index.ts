@@ -30,8 +30,8 @@ function externalRunsRoot(source: string, configDir: string): string {
 }
 
 /**
- * All Sloppatrol data is plain JSON under the user's cache, so checkouts and
- * worktrees never become part of the repository tree that tools lint.
+ * Reports remain under the profile's runs directory. Source copies use the user's
+ * cache so nested checkouts never become part of the repository tree tools lint.
  */
 export class Store {
   readonly root: string;
