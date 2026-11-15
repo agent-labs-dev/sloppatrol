@@ -34,8 +34,8 @@ export async function checkoutBase(
   const { source } = loaded;
   const sha = await resolveRef(source, ref);
   if (!sha) throw new Error(`Cannot resolve ${ref} in ${source}.`);
-  const dir = deps.store.path('checkouts', sha.slice(0, 12));
-  await pruneCheckouts(source, deps.store.path('checkouts'), dir);
+  const dir = deps.store.workspacePath('checkouts', sha.slice(0, 12));
+  await pruneCheckouts(source, deps.store.workspacePath('checkouts'), dir);
   const fresh = !existsSync(dir);
   await checkout(source, dir, sha);
   return { sha, dir, fresh };

@@ -26,7 +26,7 @@ export type PatrolState = {
 function externalRunsRoot(source: string): string {
   const cache = process.env.XDG_CACHE_HOME || join(homedir(), '.cache');
   const identity = createHash('sha256').update(source).digest('hex').slice(0, 12);
-  return join(cache, 'sloppatrol', `${basename(source)}-${identity}`, 'runs');
+  return join(cache, 'sloppatrol', `${basename(source)}-${identity}`);
 }
 
 /**
@@ -35,13 +35,19 @@ function externalRunsRoot(source: string): string {
  */
 export class Store {
   readonly root: string;
+  readonly workspaceRoot: string;
 
   constructor(configDir: string, source?: string) {
-    this.root = source ? externalRunsRoot(source) : join(configDir, 'runs');
+    this.root = join(configDir, 'runs');
+    this.workspaceRoot = source ? externalRunsRoot(source) : this.root;
   }
 
   path(...parts: string[]): string {
     return join(this.root, ...parts);
+  }
+
+  workspacePath(...parts: string[]): string {
+    return join(this.workspaceRoot, ...parts);
   }
 
   saveOpportunity(opportunity: Opportunity): Promise<void> {

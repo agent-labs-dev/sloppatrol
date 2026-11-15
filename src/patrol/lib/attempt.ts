@@ -28,7 +28,7 @@ export async function attempt(
   const { store, log } = ctx;
   const id = newId();
   const branch = `sloppatrol/${opportunity.kind}-${slug(opportunity.title)}-${id.slice(-4)}`;
-  const worktree = store.path('worktrees', id);
+  const worktree = store.workspacePath('worktrees', id);
   const now = () => new Date().toISOString();
   let current: Refactor = {
     id,

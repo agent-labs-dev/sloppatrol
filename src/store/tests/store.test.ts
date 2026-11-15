@@ -22,7 +22,8 @@ describe('the store', () => {
     const dir = mkdtempSync(`${tmpdir()}/sloppatrol-store-`);
     dirs.push(dir);
     const store = new Store(`${dir}/.sloppatrol`, dir);
-    expect(store.root).not.toContain(`${dir}/.sloppatrol`);
-    expect(store.root).toMatch(/sloppatrol\/[^/]+-[0-9a-f]{12}\/runs$/);
+    expect(store.root).toBe(`${dir}/.sloppatrol/runs`);
+    expect(store.workspaceRoot).not.toContain(`${dir}/.sloppatrol`);
+    expect(store.workspaceRoot).toMatch(/sloppatrol\/[^/]+-[0-9a-f]{12}$/);
   });
 });
