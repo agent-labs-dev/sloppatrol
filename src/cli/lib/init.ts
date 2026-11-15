@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { promisify } from 'node:util';
 import { CLI_AGENT_NAMES, CONFIG_DIR, CONFIG_FILE, ConfigError } from '../../config/index.js';
@@ -52,6 +52,16 @@ async function guessChecks(
       ],
     };
   if (existsSync(join(root, 'pyproject.toml'))) return { prepare: [], checks: [{ name: 'test', run: 'pytest -q' }] };
+  const luaTests = (await readdir(join(root, 'tests')).catch(() => [])).filter((file) => file.endsWith('_spec.lua'));
+  if (luaTests.length > 0 || (await readdir(root)).some((file) => file.endsWith('.toc')))
+    return {
+      prepare: [],
+      checks: [
+        { name: 'format', run: 'stylua --check .' },
+        { name: 'lint', run: 'luacheck .' },
+        { name: 'test', run: 'for spec in tests/*_spec.lua; do luajit "$spec" || exit 1; done' },
+      ],
+    };
   return { prepare: [], checks: [] };
 }
 
