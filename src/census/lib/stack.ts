@@ -20,6 +20,7 @@ const LANGUAGES: Record<string, string> = {
   '.mjs': 'javascript',
   '.cjs': 'javascript',
   '.py': 'python',
+  '.lua': 'lua',
   '.go': 'go',
   '.rs': 'rust',
   '.swift': 'swift',
