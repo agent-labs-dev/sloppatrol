@@ -29,7 +29,9 @@ async function migrateWorktree(loaded: LoadedConfig, deps: PatrolDeps, refactor:
   const destination = deps.store.workspacePath('worktrees', refactor.id);
   if (resolve(destination) === resolve(legacy)) return;
   await mkdir(dirname(destination), { recursive: true });
-  await cp(legacy, destination, { recursive: true, force: false, errorOnExist: true });
+  if (!existsSync(destination)) {
+    await cp(legacy, destination, { recursive: true, force: false, errorOnExist: true });
+  }
   await git(loaded.source, ['worktree', 'repair', destination]);
   refactor.worktree = destination;
   await deps.store.saveRefactor(refactor);
