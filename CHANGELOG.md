@@ -28,6 +28,8 @@ The patrol is light by default, so it can stay on across many repos on a shared 
 
 ### Changed
 
+- `init` uses the declared package manager or lockfile, including `bun.lock` and `bun.lockb`. Project names come from package metadata or the origin repository before the checkout folder.
+
 - The surveyor looks for five more smells, each only in its behaviour-preserving form: defensive noise (checks and `try`/`catch` for cases the contracts rule out), reinvented wheels (hand-rolled code the standard library or an existing dependency does, never by adding one), session residue (debug prints nothing reads, unowned TODOs, commented-out code, placeholder names), comment narration, and incomplete migrations (an old and a new API side by side). [Smells](playbook/smells.md) maps each to an existing opportunity kind.
 - Each rubric metric lists look-alikes not to count against a file (`skip`), next to what to look for, and the surveyor has a list of changes not to propose, both drawn from the removed lenses' "Do not flag" sections. The rubric text changed, so its version hash did: cached scores are not compared with new ones, and each file is scored again as the panel reaches it.
 - `get_census` and `sloppatrol census` add navigation aids, found by regex without a model, for TypeScript, JavaScript, Python and Lua: how many files import each file (also shown beside the largest and most changed files), functions that only forward their parameters to one call, and top-level symbols named once elsewhere. They are labelled as places to look, not evidence. On nebula's main branch (7,041 such files) the pre-pass reads in about 0.2 seconds and analyses in about 1 second, and the census goes from about 0.4 to about 1.5 seconds.
