@@ -5,7 +5,16 @@ import { createRuntime, finishTool } from '../../agents/index.js';
 import { loadConfig } from '../../config/index.js';
 import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
-import { checkNow, cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
+import {
+  checkNow,
+  cycle,
+  openBase,
+  type PatrolDeps,
+  publish,
+  refactorNow,
+  scoreNow,
+  surveyNow,
+} from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
 import { agentCommand, fixtureRepo, gitIn, read, script, scriptQueue } from './fixture.js';
 
@@ -205,6 +214,28 @@ describe('a patrol', () => {
       deps.store.workspacePath('worktrees', refactored.id),
     );
     expect(read(migrated.worktree, 'src/price.js')).toContain('items.reduce(');
+
+    // Publishing-disabled upgrades still migrate local source copies without contacting GitHub.
+    cpSync(migrated.worktree, retryLegacy, { recursive: true });
+    gitIn(loaded.source, 'worktree', 'repair', retryLegacy);
+    rmSync(migrated.worktree, { recursive: true });
+    await deps.store.saveRefactor({ ...migrated, status: 'verified', worktree: retryLegacy });
+    loaded.config.github.enabled = false;
+    const connected = deps.github;
+    deps.github = new (class extends FakeGitHub {
+      override async openPullRequest(): Promise<string> {
+        throw new Error('Publishing-disabled migration must not contact GitHub');
+      }
+    })();
+    expect(await publish(loaded, deps)).toEqual({ urls: [], errors: [], dryRun: true });
+    expect(existsSync(retryLegacy)).toBe(false);
+    const localOnly = (await deps.store.listRefactors())[0]!;
+    expect(localOnly.worktree).toBe(migrated.worktree);
+    expect(localOnly.status).toBe('verified');
+    expect(read(localOnly.worktree, 'src/price.js')).toContain('items.reduce(');
+    deps.github = connected;
+    loaded.config.github.enabled = true;
+    await deps.store.saveRefactor({ ...localOnly, status: 'published' });
 
     github.setState(pr.url, 'merged');
     script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);

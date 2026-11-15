@@ -52,12 +52,12 @@ export async function publish(loaded: LoadedConfig, deps: PatrolDeps, dryRun?: b
     if (!opportunity) continue;
     const title = titleOf(opportunity);
     const body = pullRequestBody(opportunity, refactor) + FOOTER;
-    if (result.dryRun) {
-      deps.log(`[dry run] pull request from ${refactor.branch}: ${title}\n${body}\n`);
-      continue;
-    }
     try {
       await migrateWorktree(loaded, deps, refactor);
+      if (result.dryRun) {
+        deps.log(`[dry run] pull request from ${refactor.branch}: ${title}\n${body}\n`);
+        continue;
+      }
       const url = await deps.github.openPullRequest({
         worktree: refactor.worktree,
         branch: refactor.branch,
