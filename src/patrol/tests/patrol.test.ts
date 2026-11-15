@@ -386,7 +386,7 @@ describe('a patrol', () => {
     const refactor = await refactorNow(loaded, deps);
 
     expect(refactor.status).toBe('rejected');
-    expect(refactor.reason).toBe('The target metric did not improve: simplicity 50 → 50.');
+    expect(refactor.reason).toBe('No target metric improved: simplicity 50 → 50.');
     expect(refactor.verdict?.review).toBeUndefined();
   });
 
