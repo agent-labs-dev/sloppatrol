@@ -183,6 +183,7 @@ async function main(args: string[]): Promise<number> {
     }
     case 'publish': {
       const result = await publish(loaded, { ...deps, log: out }, flags['dry-run'] === true || undefined);
+      if (!result.verified) out('No verified refactors to publish.');
       for (const url of result.urls) out(url);
       for (const error of result.errors) log(error);
       if (result.dryRun && !flags['dry-run']) log('github.enabled is false: this was a dry run.');

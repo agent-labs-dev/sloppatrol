@@ -227,7 +227,7 @@ describe('a patrol', () => {
         throw new Error('Publishing-disabled migration must not contact GitHub');
       }
     })();
-    expect(await publish(loaded, deps)).toEqual({ urls: [], errors: [], dryRun: true });
+    expect(await publish(loaded, deps)).toEqual({ urls: [], errors: [], dryRun: true, verified: 1 });
     expect(existsSync(retryLegacy)).toBe(false);
     const localOnly = (await deps.store.listRefactors())[0]!;
     expect(localOnly.worktree).toBe(migrated.worktree);

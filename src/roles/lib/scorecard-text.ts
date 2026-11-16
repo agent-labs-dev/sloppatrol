@@ -20,10 +20,7 @@ export function scorecardMarkdown(scorecard: Scorecard): string {
       .filter((u) => u.scores[metric.id])
       .sort((a, b) => a.scores[metric.id]!.score - b.scores[metric.id]!.score)
       .slice(0, 3)
-      .map(
-        (u) =>
-          `  - \`${u.path}\`: ${toPercent(u.scores[metric.id]!.score)}% (${u.scores[metric.id]!.evidence.slice(0, 200)})`,
-      );
+      .map((u) => `  - \`${u.path}\`: ${toPercent(u.scores[metric.id]!.score)}% (${u.scores[metric.id]!.evidence})`);
     lines.push(`## ${metric.name} (\`${metric.id}\`): ${toPercent(mean)}%\n${worst.join('\n')}`);
   }
   const missing = (scorecard.guardrails ?? []).filter((g) => !g.present);
