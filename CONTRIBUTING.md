@@ -8,6 +8,10 @@ pnpm check   # Biome, module boundaries, types
 pnpm knip
 ```
 
+## TypeScript
+
+`tsc` is TypeScript 7, installed as `@typescript/native`. TypeScript 7 ships no compiler API, and dependency-cruiser parses `.ts` files through that API, so the `typescript` package name points at `@typescript/typescript6`, the TypeScript 6 API that Microsoft publishes for tools. Without it `pnpm lint:boundaries` skips every `.ts` file and passes on nothing. Fold the two back into one `typescript` once dependency-cruiser supports the TypeScript 7 API.
+
 ## Shape of the code
 
 Sloppatrol follows its own [playbook](playbook/principles.md).
