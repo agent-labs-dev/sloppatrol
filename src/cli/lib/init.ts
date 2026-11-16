@@ -86,7 +86,8 @@ export async function init(root: string, agent: string, log: (line: string) => v
   await writeFile(
     file,
     `# Sloppatrol: https://github.com/agent-labs-dev/sloppatrol
-# Commit this file and instructions.md. Run data is kept in the user's cache.
+# Commit this file and instructions.md. Run data is kept in .sloppatrol/runs/ (git-ignored);
+# checkouts and worktrees are kept in the user's cache.
 version: 1
 project: { name: ${JSON.stringify(name)} }
 # The agent every role runs on. auto: the first of claude, codex, opencode on PATH.
