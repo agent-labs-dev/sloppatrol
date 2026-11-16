@@ -48,7 +48,7 @@ const commandSchema = z.union(
       .strict()
       .transform((entry) => entry.run),
   ],
-  { errorMap: () => ({ message: 'expected a command string such as "bun install", or { run: <command> }' }) },
+  { error: 'expected a command string such as "bun install", or { run: <command> }' },
 );
 
 const checkSchema = z.object({
@@ -62,7 +62,7 @@ const checkSchema = z.object({
 export const configSchema = z
   .object({
     version: z.literal(1).default(1),
-    project: z.object({ name: z.string().default('app'), source: z.string().default('.') }).default({}),
+    project: z.object({ name: z.string().default('app'), source: z.string().default('.') }).prefault({}),
     /** The runtime of every role, unless a role sets its own `use`. */
     agent: runtimeSchema.default('auto'),
     /** Runs once in each fresh checkout or worktree, before the checks: install, codegen. */
@@ -96,7 +96,7 @@ export const configSchema = z
         maxFiles: z.number().int().positive().default(12),
         maxLines: z.number().int().positive().default(600),
       })
-      .default({}),
+      .prefault({}),
     mutation: z
       .object({
         /**
@@ -106,7 +106,7 @@ export const configSchema = z
          */
         sourceBugs: z.number().int().nonnegative().default(2),
       })
-      .default({}),
+      .prefault({}),
     agents: z
       .object({
         surveyor: z
@@ -118,7 +118,7 @@ export const configSchema = z
             /** The most opportunities one survey records. */
             maxPerSurvey: z.number().int().positive().default(8),
           })
-          .default({}),
+          .prefault({}),
         refactorer: z
           .object({
             ...limits,
@@ -137,12 +137,12 @@ export const configSchema = z
             cleanupTimeoutMinutes: z.number().positive().default(15),
             cleanupMaxSteps: z.number().int().positive().default(30),
           })
-          .default({}),
+          .prefault({}),
         /** Scores files against the metrics rubric, for the scorecard and for each refactor's proof. */
-        assessor: z.object({ ...limits }).default({}),
-        reviewer: z.object({ ...limits, enabled: z.boolean().default(true) }).default({}),
+        assessor: z.object({ ...limits }).prefault({}),
+        reviewer: z.object({ ...limits, enabled: z.boolean().default(true) }).prefault({}),
       })
-      .default({}),
+      .prefault({}),
     /** The LLM-judged quality metrics (ADR 0004). */
     metrics: z
       .object({
@@ -159,7 +159,7 @@ export const configSchema = z
         /** Assessor sessions that run at once, for the scorecard and for the judges of a proof. */
         parallel: z.number().int().positive().default(3),
       })
-      .default({}),
+      .prefault({}),
     github: z
       .object({
         enabled: z.boolean().default(false),
@@ -169,7 +169,7 @@ export const configSchema = z
         /** Sloppatrol waits while this many of its pull requests are open. */
         maxOpen: z.number().int().positive().default(3),
       })
-      .default({}),
+      .prefault({}),
     patrol: z
       .object({
         intervalMinutes: z.number().positive().default(60),
@@ -196,7 +196,7 @@ export const configSchema = z
          */
         checks: z.array(z.string()).default([]),
       })
-      .default({}),
+      .prefault({}),
   })
   .superRefine((config, issues) => {
     const names = new Set(config.checks.map((c) => c.name));
