@@ -81,12 +81,12 @@ export async function init(root: string, agent: string, log: (line: string) => v
     ? guess.checks
         .map((c) => `  - name: ${c.name}\n    run: ${c.run}${c.name === 'test' ? '\n    tests: true' : ''}`)
         .join('\n')
-    : '  - name: test\n    run: echo "set your test command" && exit 1\n    tests: true';
+    : '  []';
   await mkdir(dir, { recursive: true });
   await writeFile(
     file,
     `# Sloppatrol: https://github.com/agent-labs-dev/sloppatrol
-# Commit this file and instructions.md. runs/ is local data.
+# Commit this file and instructions.md. Run data is kept in the user's cache.
 version: 1
 project: { name: ${JSON.stringify(name)} }
 # The agent every role runs on. auto: the first of claude, codex, opencode on PATH.
@@ -129,5 +129,9 @@ patrol: { intervalMinutes: 60, pull: origin/main, nice: 10, backoff: true, maxCy
   if (!ignored.includes('.sloppatrol/runs'))
     await appendFile(gitignore, `${ignored && !ignored.endsWith('\n') ? '\n' : ''}.sloppatrol/runs/\n`);
   log(`Created ${file}.`);
-  log('Next: run `sloppatrol doctor`, then `sloppatrol check`, then `sloppatrol`.');
+  log(
+    guess.checks.length
+      ? 'Next: run `sloppatrol doctor`, then `sloppatrol check`, then `sloppatrol`.'
+      : 'No checks were detected. Edit checks in sloppatrol.yml before running `sloppatrol check` or `sloppatrol`.',
+  );
 }

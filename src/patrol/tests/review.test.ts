@@ -49,7 +49,13 @@ describe('a review', () => {
     gitIn(repo, 'commit', '-q', '-m', 'main moves on');
     const loaded = await loadConfig(repo);
     const github = new FakeGitHub();
-    const deps: PatrolDeps = { store: new Store(loaded.dir), github, runtimeFor: createRuntime, log: () => {} };
+    const deps: PatrolDeps = {
+      store: new Store(loaded.dir, loaded.source),
+      github,
+      runtimeFor: createRuntime,
+      log: () => {},
+    };
+    repos.push(deps.store.workspaceRoot);
     return { repo, loaded, deps, github };
   }
 

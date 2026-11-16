@@ -151,7 +151,7 @@ function meanOfJudges(panel: AssessedScores[], labels: string[]): AssessedScores
 }
 
 /**
- * Kept when every target metric went up, or with no targets, when any metric
+ * Kept when at least one target metric went up, or with no targets, when any metric
  * went up; and no metric dropped by more than `tolerance` (judge noise). A
  * refactor whose gain is proven another way (`requireGain: false`) only
  * must not make a metric worse.
@@ -171,12 +171,12 @@ function verdictOf(
     return worse.length
       ? { improved: false, reason: `A metric got worse: ${worse.map(show).join(', ')}.` }
       : { improved: true, reason: `No metric got worse: ${scored.map(show).join(', ')}.` };
-  const flat = targets.filter((m) => !(delta(m) > 0));
-  if (flat.length)
-    return { improved: false, reason: `The target metric did not improve: ${flat.map(show).join(', ')}.` };
+  const betterTargets = targets.filter((m) => delta(m) > 0);
+  if (targets.length && !betterTargets.length)
+    return { improved: false, reason: `No target metric improved: ${targets.map(show).join(', ')}.` };
   if (!targets.length && !scored.some((m) => delta(m) > 0)) return { improved: false, reason: 'No metric improved.' };
   if (worse.length) return { improved: false, reason: `Another metric got worse: ${worse.map(show).join(', ')}.` };
-  const better = targets.length ? targets : scored.filter((m) => delta(m) > 0);
+  const better = targets.length ? betterTargets : scored.filter((m) => delta(m) > 0);
   return { improved: true, reason: better.map(show).join(', ') };
 }
 

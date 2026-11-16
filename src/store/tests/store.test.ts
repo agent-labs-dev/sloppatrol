@@ -17,4 +17,15 @@ describe('the store', () => {
     expect((await store.patrolState()).cycles).toBeGreaterThanOrEqual(0);
     expect(readdirSync(store.root)).toEqual(['patrol.json']);
   });
+
+  it('puts repository runs outside the repository when a source is supplied', () => {
+    const dir = mkdtempSync(`${tmpdir()}/sloppatrol-store-`);
+    dirs.push(dir);
+    const store = new Store(`${dir}/.sloppatrol`, dir);
+    const other = new Store(`${dir}/other/.sloppatrol`, dir);
+    expect(store.root).toBe(`${dir}/.sloppatrol/runs`);
+    expect(store.workspaceRoot).not.toContain(`${dir}/.sloppatrol`);
+    expect(store.workspaceRoot).toMatch(/sloppatrol\/[^/]+-[0-9a-f]{12}$/);
+    expect(other.workspaceRoot).not.toBe(store.workspaceRoot);
+  });
 });

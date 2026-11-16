@@ -132,8 +132,10 @@ export function reviewNow(
     if (!pairs.length && !deleted.length) return review;
 
     // A review that was stopped (Ctrl-C) left its checkouts behind.
-    const root = deps.store.path('reviews');
-    if (existsSync(root)) for (const name of await readdir(root)) await removeWorktree(source, join(root, name));
+    const root = deps.store.workspacePath('reviews');
+    for (const oldRoot of new Set([root, deps.store.path('reviews')]))
+      if (existsSync(oldRoot))
+        for (const name of await readdir(oldRoot)) await removeWorktree(source, join(oldRoot, name));
     const dirs: string[] = [];
     try {
       const scoreAt = async (sha: string, paths: string[]) => {

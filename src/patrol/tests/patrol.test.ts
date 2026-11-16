@@ -1,11 +1,20 @@
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createRuntime, finishTool } from '../../agents/index.js';
 import { loadConfig } from '../../config/index.js';
 import { fingerprintOf, type Opportunity } from '../../domain/index.js';
 import { FakeGitHub } from '../../github/index.js';
-import { checkNow, cycle, openBase, type PatrolDeps, refactorNow, scoreNow, surveyNow } from '../../patrol/index.js';
+import {
+  checkNow,
+  cycle,
+  openBase,
+  type PatrolDeps,
+  publish,
+  refactorNow,
+  scoreNow,
+  surveyNow,
+} from '../../patrol/index.js';
 import { Store } from '../../store/index.js';
 import { agentCommand, fixtureRepo, gitIn, read, script, scriptQueue } from './fixture.js';
 
@@ -80,6 +89,24 @@ describe('a patrol', () => {
     return { repo, loaded, deps, github: fake };
   }
 
+  it('removes legacy and unregistered source copies when moving checkouts outside the repo', async () => {
+    const { repo, loaded, deps } = await setUp(false);
+    deps.store = new Store(loaded.dir, loaded.source);
+    repos.push(deps.store.workspaceRoot);
+    const legacy = deps.store.path('checkouts', 'legacy');
+    gitIn(repo, 'worktree', 'add', '--detach', legacy, 'main');
+    const stale = deps.store.workspacePath('checkouts', 'unregistered');
+    mkdirSync(stale, { recursive: true });
+    writeFileSync(join(stale, 'residue'), 'old source');
+
+    const base = await openBase(loaded, deps);
+
+    expect(base.checks.status).toBe('passed');
+    expect(existsSync(legacy)).toBe(false);
+    expect(existsSync(stale)).toBe(false);
+    expect(base.dir.startsWith(deps.store.workspaceRoot)).toBe(true);
+  });
+
   it('fails a CLI session that exits cleanly without finishing', async () => {
     const { repo } = await setUp();
     const runtime = createRuntime({ runtime: 'cli', command: 'true', label: 'scripted' });
@@ -99,6 +126,8 @@ describe('a patrol', () => {
 
   it('surveys, refactors, verifies and opens a pull request; a merge finishes the opportunity', async () => {
     const { loaded, deps, github } = await setUp();
+    deps.store = new Store(loaded.dir, loaded.source);
+    repos.push(deps.store.workspaceRoot);
     script('surveyor', [
       { tool: 'get_census' },
       { tool: 'record_opportunity', input: { ...SIMPLIFY, kind: 'replace-mock' }, mustSucceed: false },
@@ -155,6 +184,58 @@ describe('a patrol', () => {
     expect(await deps.store.listCycles()).toMatchObject([
       { sha: refactored.baseSha, surveyed: 1, refactors: [{ id: refactored.id, status: 'verified' }], published: 1 },
     ]);
+
+    const legacy = deps.store.path('worktrees', refactored.id);
+    mkdirSync(join(legacy, '..'), { recursive: true });
+    const { cpSync } = await import('node:fs');
+    cpSync(refactored.worktree, legacy, { recursive: true });
+    gitIn(loaded.source, 'worktree', 'repair', legacy);
+    rmSync(refactored.worktree, { recursive: true });
+    await deps.store.saveRefactor({ ...refactored, status: 'published', prUrl: pr.url, worktree: legacy });
+    script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);
+    await cycle(loaded, deps);
+    expect(existsSync(legacy)).toBe(false);
+    const migrated = (await deps.store.listRefactors())[0]!;
+    expect(migrated.worktree).toBe(deps.store.workspacePath('worktrees', refactored.id));
+    expect(gitIn(migrated.worktree, 'show', 'HEAD:src/price.js')).toContain('items.reduce(');
+
+    // A crash after copying and repairing but before persisting leaves both
+    // paths. The next cycle must reuse the repaired destination, not fail on
+    // EEXIST or create a nested checkout.
+    const retryLegacy = deps.store.path('worktrees', refactored.id);
+    const retryRefactor = { ...migrated, worktree: retryLegacy };
+    cpSync(migrated.worktree, retryLegacy, { recursive: true });
+    gitIn(loaded.source, 'worktree', 'repair', retryLegacy);
+    rmSync(join(migrated.worktree, 'src', 'price.js'));
+    await deps.store.saveRefactor(retryRefactor);
+    await cycle(loaded, deps);
+    expect(existsSync(retryLegacy)).toBe(false);
+    expect((await deps.store.listRefactors()).find((item) => item.id === refactored.id)?.worktree).toBe(
+      deps.store.workspacePath('worktrees', refactored.id),
+    );
+    expect(read(migrated.worktree, 'src/price.js')).toContain('items.reduce(');
+
+    // Publishing-disabled upgrades still migrate local source copies without contacting GitHub.
+    cpSync(migrated.worktree, retryLegacy, { recursive: true });
+    gitIn(loaded.source, 'worktree', 'repair', retryLegacy);
+    rmSync(migrated.worktree, { recursive: true });
+    await deps.store.saveRefactor({ ...migrated, status: 'verified', worktree: retryLegacy });
+    loaded.config.github.enabled = false;
+    const connected = deps.github;
+    deps.github = new (class extends FakeGitHub {
+      override async openPullRequest(): Promise<string> {
+        throw new Error('Publishing-disabled migration must not contact GitHub');
+      }
+    })();
+    expect(await publish(loaded, deps)).toEqual({ urls: [], errors: [], dryRun: true });
+    expect(existsSync(retryLegacy)).toBe(false);
+    const localOnly = (await deps.store.listRefactors())[0]!;
+    expect(localOnly.worktree).toBe(migrated.worktree);
+    expect(localOnly.status).toBe('verified');
+    expect(read(localOnly.worktree, 'src/price.js')).toContain('items.reduce(');
+    deps.github = connected;
+    loaded.config.github.enabled = true;
+    await deps.store.saveRefactor({ ...localOnly, status: 'published' });
 
     github.setState(pr.url, 'merged');
     script('surveyor', [{ tool: 'finish', input: { summary: 'Nothing new.' } }]);
@@ -373,6 +454,29 @@ describe('a patrol', () => {
     expect(await deps.store.listRefactors()).toEqual([]);
   });
 
+  it.each([
+    { scores: { simplicity: 3, clarity: 2 }, status: 'verified' },
+    { scores: { simplicity: 2, clarity: 2 }, status: 'rejected' },
+    { scores: { simplicity: 3, clarity: 1 }, status: 'rejected' },
+  ])('requires one target gain and no collateral drop: $scores', async ({ scores, status }) => {
+    const { loaded, deps } = await setUp(false);
+    await deps.store.saveOpportunity(opportunity({ metrics: ['simplicity', 'clarity'] }));
+    script('refactorer', [
+      { edit: { file: 'src/price.js', from: LOOP, to: REDUCE } },
+      { tool: 'finish', input: { summary: 'reduce.' } },
+    ]);
+    script('assessor', [
+      { assess: [{ contains: 'reduce(', score: 2, scores }, { score: 2 }] },
+      { tool: 'finish', input: { summary: 'Scored.' } },
+    ]);
+    script('reviewer', approve);
+
+    const refactor = await refactorNow(loaded, deps);
+
+    expect(refactor.status, refactor.reason).toBe(status);
+    expect(refactor.proof?.improvement?.improved).toBe(status === 'verified');
+  });
+
   it('rejects a change the blind assessor does not score better', async () => {
     const { loaded, deps } = await setUp(false);
     await deps.store.saveOpportunity(opportunity());
@@ -386,7 +490,7 @@ describe('a patrol', () => {
     const refactor = await refactorNow(loaded, deps);
 
     expect(refactor.status).toBe('rejected');
-    expect(refactor.reason).toBe('The target metric did not improve: simplicity 50 → 50.');
+    expect(refactor.reason).toBe('No target metric improved: simplicity 50 → 50.');
     expect(refactor.verdict?.review).toBeUndefined();
   });
 

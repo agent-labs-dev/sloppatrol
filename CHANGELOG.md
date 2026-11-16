@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
 
 ### Breaking
 
@@ -27,6 +27,8 @@ The patrol is light by default, so it can stay on across many repos on a shared 
 **Migration.** A repository that vendors `.sloppatrol/gate.py` or `.sloppatrol/agents.py`, or calls the action in CI, keeps working from its own copy, but nothing here updates it. Either drop the gate, its CI job and its `sloppatrol:` markers, or own the rules: move them under a path of your own and run them as an ordinary check. Delete `.sloppatrol/ledger.json` and `.sloppatrol/reports/`, which nothing reads now.
 
 ### Changed
+
+- CI validates workflows and scans the full Git history for secrets. Superseded PR checks cancel automatically.
 
 - `init` uses the declared package manager or lockfile, including `bun.lock` and `bun.lockb`. Project names come from package metadata or the origin repository before the checkout folder.
 

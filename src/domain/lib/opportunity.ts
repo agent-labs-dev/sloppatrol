@@ -36,7 +36,7 @@ export function sideOf(kind: OpportunityKind): Side {
 
 /**
  * How a kind proves its gain. `coverage`: a planted bug survives the old
- * tests and the new tests catch it. `metrics`: the target metrics go up.
+ * tests and the new tests catch it. `metrics`: at least one target metric improves without a material drop in another metric.
  */
 export function gainOf(kind: OpportunityKind): 'coverage' | 'metrics' {
   return kind === 'characterize' ? 'coverage' : 'metrics';

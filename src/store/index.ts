@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { appendFile, mkdir, readdir, readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { homedir } from 'node:os';
+import { basename, dirname, join } from 'node:path';
 import type {
   AgentEvent,
   AgentStatus,
@@ -21,19 +23,31 @@ export type PatrolState = {
   cycles: number;
 };
 
+function externalRunsRoot(source: string, configDir: string): string {
+  const cache = process.env.XDG_CACHE_HOME || join(homedir(), '.cache');
+  const identity = createHash('sha256').update(`${source}\0${configDir}`).digest('hex').slice(0, 12);
+  return join(cache, 'sloppatrol', `${basename(source)}-${identity}`);
+}
+
 /**
- * All Sloppatrol data is plain JSON under `.sloppatrol/runs/`, so a person,
- * an agent and a dashboard can all read it.
+ * Reports remain under the profile's runs directory. Source copies use the user's
+ * cache so nested checkouts never become part of the repository tree tools lint.
  */
 export class Store {
   readonly root: string;
+  readonly workspaceRoot: string;
 
-  constructor(configDir: string) {
+  constructor(configDir: string, source?: string) {
     this.root = join(configDir, 'runs');
+    this.workspaceRoot = source ? externalRunsRoot(source, configDir) : this.root;
   }
 
   path(...parts: string[]): string {
     return join(this.root, ...parts);
+  }
+
+  workspacePath(...parts: string[]): string {
+    return join(this.workspaceRoot, ...parts);
   }
 
   saveOpportunity(opportunity: Opportunity): Promise<void> {

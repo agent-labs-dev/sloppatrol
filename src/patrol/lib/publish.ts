@@ -1,6 +1,9 @@
+import { existsSync } from 'node:fs';
+import { cp, mkdir, rm } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 import type { LoadedConfig } from '../../config/index.js';
 import { type Opportunity, type Refactor, titleOf } from '../../domain/index.js';
-import { removeWorktree } from '../../git/index.js';
+import { git, removeWorktree } from '../../git/index.js';
 import type { PatrolDeps } from './deps.js';
 import { proofMarkdown } from './proof-text.js';
 
@@ -19,6 +22,24 @@ function pullRequestBody(opportunity: Opportunity, refactor: Refactor): string {
     .join('\n\n');
 }
 
+/** Move persisted active checkouts without changing their branch or commits. */
+async function migrateWorktree(loaded: LoadedConfig, deps: PatrolDeps, refactor: Refactor): Promise<void> {
+  const legacy = deps.store.path('worktrees', refactor.id);
+  if (resolve(refactor.worktree) !== resolve(legacy) || !existsSync(legacy)) return;
+  const destination = deps.store.workspacePath('worktrees', refactor.id);
+  if (resolve(destination) === resolve(legacy)) return;
+  await mkdir(dirname(destination), { recursive: true });
+  // The legacy checkout is the complete source of truth. A destination left
+  // by an interrupted copy may have valid Git metadata but missing files, so
+  // never repair it in place or delete the only complete checkout.
+  if (existsSync(destination)) await rm(destination, { recursive: true, force: true });
+  await cp(legacy, destination, { recursive: true, force: false, errorOnExist: true });
+  await git(loaded.source, ['worktree', 'repair', destination]);
+  refactor.worktree = destination;
+  await deps.store.saveRefactor(refactor);
+  await rm(legacy, { recursive: true });
+}
+
 export type Published = { urls: string[]; errors: string[]; dryRun: boolean };
 
 /** Opens a pull request for each verified refactor. Without GitHub, it prints them. */
@@ -31,11 +52,12 @@ export async function publish(loaded: LoadedConfig, deps: PatrolDeps, dryRun?: b
     if (!opportunity) continue;
     const title = titleOf(opportunity);
     const body = pullRequestBody(opportunity, refactor) + FOOTER;
-    if (result.dryRun) {
-      deps.log(`[dry run] pull request from ${refactor.branch}: ${title}\n${body}\n`);
-      continue;
-    }
     try {
+      await migrateWorktree(loaded, deps, refactor);
+      if (result.dryRun) {
+        deps.log(`[dry run] pull request from ${refactor.branch}: ${title}\n${body}\n`);
+        continue;
+      }
       const url = await deps.github.openPullRequest({
         worktree: refactor.worktree,
         branch: refactor.branch,
@@ -62,6 +84,7 @@ export async function publish(loaded: LoadedConfig, deps: PatrolDeps, dryRun?: b
 export async function syncGithub(loaded: LoadedConfig, deps: PatrolDeps): Promise<void> {
   for (const refactor of await deps.store.listRefactors()) {
     if (refactor.status !== 'published' || !refactor.prUrl) continue;
+    await migrateWorktree(loaded, deps, refactor);
     let state: string;
     try {
       state = await deps.github.pullRequestState(refactor.prUrl);

@@ -53,7 +53,7 @@ An agent proposes; code decides. A refactor is kept only when every step below p
 | Size | At most `guards.maxFiles` files and `guards.maxLines` lines. |
 | Checks | Every command in `checks` passes, as it passes on `main`. Sloppatrol does no work while `main` is red. |
 | Mutation | A **tests** refactor plants one bug in the unchanged source; a test check must turn red. A test that cannot fail proves nothing. A **source** refactor gets `mutation.sourceBugs` bugs (2 by default) planted on lines it kept, on `main` and on the change: each bug the tests catch on `main` they must still catch, so a refactor cannot move tested code out of the tests' reach. |
-| Improvement | The assessor scores the changed files before and after, blind. The target metrics must go up; no other metric may drop. |
+| Improvement | The assessor scores the changed files before and after, blind. At least one target metric must improve; no scored metric may drop by more than `metrics.tolerance`. |
 | Review | A reviewer agent reads the diff against the playbook, and rejects when in doubt. |
 
 So the stronger your tests, the more Sloppatrol can do. Each check must run the same work on `main` and on every refactor: a command that picks its tests from the diff (`--changed`, `affected`) runs less on `main`, so a failure on a refactor can be old. `sloppatrol doctor` warns about such a check. Where code has no tests, the surveyor proposes **characterization tests** first: tests that pin what the code does today. To move a test from a mocking library to a fake, it makes two refactors: `inject-dependency` (source: add a seam, with today's behaviour as the default), then `replace-mock` (tests: inject a fake through the seam).
