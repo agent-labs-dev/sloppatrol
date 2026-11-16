@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The scorecard shows each assessor's whole evidence instead of cutting it at 200 characters.
+- The `sloppatrol.yml` that `init` writes says run data is kept in `.sloppatrol/runs/` (git-ignored) and checkouts in the user's cache.
+- `sloppatrol publish` prints "No verified refactors to publish." when there is nothing to publish, with or without `--dry-run`.
+
 ## [0.4.0] - 2026-11-16
 
 ### Breaking

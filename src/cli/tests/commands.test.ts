@@ -78,6 +78,34 @@ describe('CLI command selection', () => {
     expect(config.checks).toEqual([{ name: 'test', run: `${expected} run test`, tests: true }]);
   });
 
+  it('says where run data and checkouts are kept', () => {
+    const project = mkdtempSync(join(cwd, 'worktree-trial-'));
+    expect(spawnSync('git', ['init'], { cwd: project }).status).toBe(0);
+    expect(run('--cwd', project, 'init').status).toBe(0);
+    const config = readFileSync(join(project, '.sloppatrol/sloppatrol.yml'), 'utf8');
+    expect(config).toContain('Run data is kept in .sloppatrol/runs/ (git-ignored)');
+    expect(config).toContain("checkouts and worktrees are kept in the user's cache");
+    expect(readFileSync(join(project, '.gitignore'), 'utf8')).toContain('.sloppatrol/runs/');
+  });
+
+  it.each([{ args: ['publish', '--dry-run'] }, { args: ['publish'] }])(
+    '$args says when there is nothing to publish',
+    ({ args }) => {
+      const project = mkdtempSync(join(cwd, 'worktree-trial-'));
+      expect(spawnSync('git', ['init'], { cwd: project }).status).toBe(0);
+      writeFileSync(join(project, 'package.json'), JSON.stringify({ name: 'empty', scripts: { test: 'node --test' } }));
+      expect(run('--cwd', project, 'init').status).toBe(0);
+      const result = spawnSync(process.execPath, [cli, '--cwd', project, ...args], {
+        cwd,
+        encoding: 'utf8',
+        timeout: 5000,
+        env: { ...process.env, XDG_CACHE_HOME: join(project, 'cache') },
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toBe('No verified refactors to publish.\n');
+    },
+  );
+
   it('uses the remote repository name when no package name exists', () => {
     const project = mkdtempSync(join(cwd, 'worktree-trial-'));
     for (const args of [['init'], ['remote', 'add', 'origin', 'git@github.com:example/stable-project.git']]) {

@@ -40,16 +40,18 @@ async function migrateWorktree(loaded: LoadedConfig, deps: PatrolDeps, refactor:
   await rm(legacy, { recursive: true });
 }
 
-export type Published = { urls: string[]; errors: string[]; dryRun: boolean };
+/** verified: how many verified refactors this run found to publish. */
+export type Published = { urls: string[]; errors: string[]; dryRun: boolean; verified: number };
 
 /** Opens a pull request for each verified refactor. Without GitHub, it prints them. */
 export async function publish(loaded: LoadedConfig, deps: PatrolDeps, dryRun?: boolean): Promise<Published> {
   const settings = loaded.config.github;
-  const result: Published = { urls: [], errors: [], dryRun: dryRun ?? !settings.enabled };
+  const result: Published = { urls: [], errors: [], dryRun: dryRun ?? !settings.enabled, verified: 0 };
   for (const refactor of await deps.store.listRefactors()) {
     if (refactor.status !== 'verified') continue;
     const opportunity = await deps.store.getOpportunity(refactor.opportunityId);
     if (!opportunity) continue;
+    result.verified += 1;
     const title = titleOf(opportunity);
     const body = pullRequestBody(opportunity, refactor) + FOOTER;
     try {
