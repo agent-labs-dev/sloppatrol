@@ -1,68 +1,70 @@
 name: Release
 
+# Pushing a signed vX.Y.Z tag on main publishes that version to npm, then opens a GitHub release whose notes
+# are the version's CHANGELOG.md entry. A version/changelog PR sets package.json and CHANGELOG.md first.
 on:
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: Version bump
-        type: choice
-        options: [patch, minor, major]
-        default: patch
+  push:
+    tags: ["v*.*.*"]
 
-permissions:
-  contents: write
-  id-token: write
+permissions: {}
 
 concurrency:
-  group: sloppatrol-release
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    if: github.ref == 'refs/heads/main'
+  npm:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    # Must match the environment on the npm trusted publisher; the environment
-    # itself only allows deployments from main.
+    # Must match the environment on the npm trusted publisher. The environment allows main and v* tags.
     environment: npm
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Check the tag is signed, on main and matches the version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          tag=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object')
+          if [ "$(jq -r .type <<<"$tag")" != tag ] \
+            || [ "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$(jq -r .sha <<<"$tag")" --jq .verification.verified)" != true ]; then
+            echo "::error::$GITHUB_REF_NAME must be a signed annotated tag (git tag -s)"
+            exit 1
+          fi
+          version=$(jq -r .version package.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json $version"
+            exit 1
+          fi
+          if ! awk -v v="[$version]" '$1 == "##" && $2 == v { found = 1 } END { exit !found }' CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no [$version] entry"
+            exit 1
+          fi
       # No `version:` here: it is read from package.json's packageManager.
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: pnpm
+          # No cache in a publishing workflow: a poisoned cache would ship in the package.
+          package-manager-cache: false
       # Node 24 ships npm 11, required by the trusted publisher.
       - run: npm --version
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm knip
       - run: pnpm test
-      - name: Bump package version
-        id: version
-        # The newest v* tag holds the last release. The main rules do not let
-        # this workflow push, so the version on main can be older than the tag.
-        env:
-          BUMP: ${{ inputs.bump }}
-        run: |
-          last=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
-          if [ -n "$last" ]; then
-            npm version "${last#v}" --no-git-tag-version --allow-same-version
-          fi
-          npm version "$BUMP" --no-git-tag-version
-          version=$(node -p "require('./package.json').version")
-          echo "value=$version" >> "$GITHUB_OUTPUT"
       - run: pnpm build
       - name: Smoke test package
-        env:
-          VERSION: ${{ steps.version.outputs.value }}
         run: |
-          test "$(node dist/cli/index.js --version)" = "$VERSION"
+          test "v$(node dist/cli/index.js --version)" = "$GITHUB_REF_NAME"
           node dist/cli/index.js --help
           # The dashboard serves ui/ and the roles read playbook/: both must ship.
           npm pack --dry-run --json | node -e "
@@ -72,24 +74,34 @@ jobs:
             if (files.some((f) => f.includes('/tests/'))) throw new Error('The package ships tests');
           "
       # No token: npm trusts this workflow through OIDC (id-token: write) and
-      # attaches provenance on its own.
+      # attaches provenance on its own. A rerun skips a version already on npm.
       - name: Publish to npm
-        run: npm publish
-      # The release commit lives only on its tag. No ruleset covers tags.
-      - name: Commit and tag
+        run: |
+          if npm view "sloppatrol@${GITHUB_REF_NAME#v}" version >/dev/null 2>&1; then
+            echo "sloppatrol@${GITHUB_REF_NAME#v} is already on npm"
+          else
+            npm publish
+          fi
+
+  github:
+    needs: npm
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # create the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: GitHub release
         env:
-          VERSION: ${{ steps.version.outputs.value }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh auth setup-git
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add package.json
-          git commit -m "release: sloppatrol v$VERSION"
-          git tag "v$VERSION"
-          git push origin "v$VERSION"
-      - name: Create GitHub release
-        env:
-          VERSION: ${{ steps.version.outputs.value }}
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "v$VERSION" --generate-notes
+          set -euo pipefail
+          # The notes are the lines between this version's heading and the next one.
+          awk -v v="[${GITHUB_REF_NAME#v}]" '/^## / { on = ($2 == v); next } on' \
+            CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          # A rerun finds the release already there and leaves it.
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          fi

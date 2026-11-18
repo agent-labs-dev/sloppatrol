@@ -10,7 +10,7 @@ Before you finish, run `pnpm check`, `pnpm knip` and `pnpm test`.
 - Fast gate: `pnpm check` and `pnpm knip`.
 - Build: `pnpm build`. Tests: `pnpm test`.
 - Workflows: `actionlint` and `zizmor --offline .github`.
-- Release: see `CONTRIBUTING.md`; publishing requires explicit authorization.
+- Release: a version/changelog PR, then a signed `vX.Y.Z` tag on `main` (see `CONTRIBUTING.md`); publishing requires explicit authorization.
 
 ## Standards
 
