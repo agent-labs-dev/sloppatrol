@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
@@ -15,7 +15,11 @@ describe('CLI command selection', () => {
 
   beforeAll(() => {
     // Build the executable under test so these tests do not depend on a prior `pnpm build`.
-    const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
+    // tsc comes from @typescript/native (see CONTRIBUTING.md), whose exports map hides bin/, so
+    // resolve its package.json and follow the bin entry.
+    const tscPackage = createRequire(import.meta.url).resolve('@typescript/native/package.json');
+    const { bin } = JSON.parse(readFileSync(tscPackage, 'utf8')) as { bin: { tsc: string } };
+    const tsc = join(dirname(tscPackage), bin.tsc);
     const build = spawnSync(process.execPath, [tsc, '-p', 'tsconfig.build.json'], { cwd: root, encoding: 'utf8' });
     expect(build.status, build.stdout + build.stderr).toBe(0);
     cwd = mkdtempSync(join(tmpdir(), 'sloppatrol-commands-'));

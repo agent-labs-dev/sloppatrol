@@ -18,3 +18,9 @@ updates:
     groups:
       dependencies:
         patterns: ['*']
+    ignore:
+      # package.json engines allow Node 22 and CI runs on Node 22. Types from a
+      # newer Node major describe APIs that do not exist at runtime there, so
+      # @types/node moves to a new major only together with the engines floor.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
