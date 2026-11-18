@@ -37,6 +37,8 @@
     "check:fix": "biome check --write .",
     "lint:boundaries": "depcruise src",
     "knip": "knip --no-config-hints",
+    "gate": "pnpm check && pnpm knip && pnpm test",
+    "gate:changed": "{ git diff -z --name-only --diff-filter=d \"$(git merge-base origin/main HEAD)\"; git ls-files -z --others --exclude-standard; } | xargs -0 -r biome check --no-errors-on-unmatched && pnpm lint:boundaries && tsc --noEmit && pnpm knip && vitest run --changed $(git merge-base origin/main HEAD)",
     "prepare": "husky"
   },
   "dependencies": {
