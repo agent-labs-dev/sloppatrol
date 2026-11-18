@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-18
+
 ### Fixed
 
 - The scorecard shows each assessor's whole evidence instead of cutting it at 200 characters.

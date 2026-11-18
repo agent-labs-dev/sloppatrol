@@ -29,8 +29,18 @@ Sloppatrol follows its own [playbook](playbook/principles.md).
 
 ## Release
 
-Run the **Release** workflow from `main` in GitHub Actions, and pick `patch`, `minor` or `major`.
+A release is a signed `vX.Y.Z` tag on `main`.
 
-- The workflow runs the checks and the tests, bumps the version from the newest `v*` tag, and publishes to npm.
-- npm trusts the workflow through OIDC, so no npm token is stored. The trusted publisher names `release.yml` and the `npm` environment.
-- The release commit lives only on its `v*` tag, and the workflow opens a GitHub release for it.
+1. Open a PR that sets `version` in `package.json` and turns `## [Unreleased]` in `CHANGELOG.md` into `## [X.Y.Z] - YYYY-MM-DD`, with a new empty `## [Unreleased]` above it. Merge it.
+2. Tag the merged commit and push the tag:
+
+   ```bash
+   git switch main && git pull --ff-only
+   git tag -s vX.Y.Z -m "sloppatrol vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+The tag runs `release.yml`. It checks that the tag is signed, on `main` and matches `package.json` and a `CHANGELOG.md` entry, runs the checks and the tests, publishes to npm, then opens a GitHub release whose notes are that version's `CHANGELOG.md` entry.
+
+- npm trusts the workflow through OIDC, so no npm token is stored. The trusted publisher names `release.yml` and the `npm` environment, which accepts deployments from `main` and `v*` tags.
+- A rerun skips the npm publish and the GitHub release when they already exist.
