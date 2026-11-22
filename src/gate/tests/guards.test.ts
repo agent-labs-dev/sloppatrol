@@ -13,6 +13,8 @@ const rules = (overrides: Partial<GuardRules> = {}): GuardRules => ({
   uncheckedTests: [],
   maxFiles: 12,
   maxLines: 600,
+  fileLines: 600,
+  dirFiles: 40,
   ...overrides,
 });
 
@@ -137,6 +139,56 @@ describe('the guards', () => {
         guard: 'unchecked',
         file: 'tests/integration/test_a.py',
         detail: 'No check runs this test file, so nothing proves the change.',
+      },
+    ]);
+  });
+  it('keep a long file within its budget, and reject one that grows past it', async () => {
+    const lines = (n: number) => `${Array.from({ length: n }, (_, i) => `export const v${i} = ${i};`).join('\n')}\n`;
+    const { dir, base, write } = make({ 'src/long.ts': lines(30), 'src/short.ts': lines(5) });
+    write('src/long.ts', lines(29));
+    write('src/short.ts', lines(12));
+    expect((await inspectChange(dir, base, rules({ fileLines: 10 }))).findings).toEqual([
+      {
+        guard: 'file-length',
+        file: 'src/short.ts',
+        detail: 'Ends at 12 lines; its budget is 10. Split it by concept into a folder instead of growing it.',
+      },
+    ]);
+    write('src/short.ts', lines(5));
+    write('src/long.ts', lines(31));
+    expect((await inspectChange(dir, base, rules({ fileLines: 10 }))).findings.map((f) => f.guard)).toEqual([
+      'file-length',
+    ]);
+  });
+
+  it('reject a folder that grows past its width, but not one a file moves out of', async () => {
+    const { dir, base, write } = make({ 'src/a.ts': 'a\n', 'src/b.ts': 'b\n', 'src/a.test.ts': 't\n' });
+    write('src/c.ts', 'c\n');
+    expect((await inspectChange(dir, base, rules({ dirFiles: 2 }))).findings).toEqual([
+      {
+        guard: 'dir-width',
+        file: 'src/',
+        detail: 'Holds 3 source files; its budget is 2. Put the new files in a folder for their concept.',
+      },
+    ]);
+    rmSync(join(dir, 'src/c.ts'));
+    rmSync(join(dir, 'src/b.ts'));
+    write('src/parts/b.ts', 'b\n');
+    write('src/c.ts', 'c\n');
+    expect((await inspectChange(dir, base, rules({ dirFiles: 2 }))).findings).toEqual([]);
+  });
+
+  it('reject added comment lines, but let a comment move with its code', async () => {
+    const { dir, base, write } = make({ 'src/a.ts': '// why a\nexport const a = 1;\n', 'docs/a.md': '# A\n' });
+    write('src/a.ts', 'export const a = 1;\n');
+    write('src/b.ts', '// why a\nexport const b = 1;\n');
+    write('docs/a.md', '# A\n\n## Gotchas\n\n- a note\n');
+    expect((await inspectChange(dir, base, rules())).findings).toEqual([]);
+    write('src/b.ts', '// why a\n// and how\nexport const b = 1; // TODO(#1): drop\n');
+    expect((await inspectChange(dir, base, rules())).findings).toEqual([
+      {
+        guard: 'comments',
+        detail: 'Adds 1 comment line(s) on balance. Say it with a name or a type, then delete the comment.',
       },
     ]);
   });

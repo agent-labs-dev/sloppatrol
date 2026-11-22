@@ -14,7 +14,7 @@ focus: [src/**]                             # where the surveyor looks (default:
 ignore: [src/generated/**]                  # what no agent may change
 uncheckedTests: [tests/e2e/**]              # tests no check runs: no refactor may change them
 comments: { ban: false }                    # true: remove comments and fix the ones the code contradicts
-guards: { maxFiles: 12, maxLines: 600 }
+guards: { maxFiles: 12, maxLines: 600, fileLines: 600, dirFiles: 40 }   # diff size; then the file-length and folder-width budgets
 mutation: { sourceBugs: 2 }                 # bugs planted on lines a source refactor kept; 0 turns it off
 metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3, parallel: 3 }   # panel: files newly scored per cycle; parallel: assessor sessions at once
 agents:

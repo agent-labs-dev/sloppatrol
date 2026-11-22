@@ -107,6 +107,8 @@ uncheckedTests: []
 guards:
   maxFiles: 12
   maxLines: 600
+  fileLines: 600
+  dirFiles: 40
 # A role can run on another agent with \`use:\`, e.g. reviewer: { use: codex }.
 agents:
   surveyor: { maxPerSurvey: 8 }

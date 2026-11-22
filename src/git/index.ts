@@ -5,14 +5,14 @@ import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
 
-export async function git(cwd: string, args: string[]): Promise<string> {
+export async function git(cwd: string, args: string[], trim = true): Promise<string> {
   const { stdout } = await exec('git', args, { cwd, maxBuffer: 64 * 1024 * 1024 });
-  return stdout.trim();
+  return trim ? stdout.trim() : stdout;
 }
 
-export async function tryGit(cwd: string, args: string[]): Promise<string | undefined> {
+export async function tryGit(cwd: string, args: string[], trim = true): Promise<string | undefined> {
   try {
-    return await git(cwd, args);
+    return await git(cwd, args, trim);
   } catch {
     return undefined;
   }

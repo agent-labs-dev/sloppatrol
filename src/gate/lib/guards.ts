@@ -14,6 +14,8 @@ export type GuardRules = {
   uncheckedTests: readonly string[];
   maxFiles: number;
   maxLines: number;
+  fileLines: number;
+  dirFiles: number;
 };
 
 function paths(file: ChangedFile): string[] {
