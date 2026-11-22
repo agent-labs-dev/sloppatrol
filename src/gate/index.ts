@@ -20,9 +20,7 @@ export type Inspection = {
 export async function inspectChange(worktree: string, baseSha: string, rules: GuardRules): Promise<Inspection> {
   const diff = await readDiff(worktree, baseSha);
   const guards = checkGuards(diff, rules);
-  const budgets = diff.length
-    ? checkBudgets(diff, await measureSizes(worktree, baseSha, diff, rules.tests), rules)
-    : [];
+  const budgets = diff.length ? checkBudgets(await measureSizes(worktree, baseSha, diff, rules.tests), rules) : [];
   return { findings: [...guards, ...budgets], stat: diffStat(diff), files: diff.map((f) => f.path) };
 }
 
