@@ -11,8 +11,9 @@ A refactor is kept only when all of these pass. No agent can overrule a failure.
 3. **No suppression.** No added lint or type suppression, `any` cast, coverage exclusion, or skipped or focused test.
 4. **Tests kept.** The diff removes no test case, and changes no test file that no check runs.
 5. **Size.** The diff stays within the file and line limits. A large diff is a sign of a shape fight, not a feature.
-6. **Checks.** Every check of the repo (typecheck, lint, tests, build) passes on the refactor, as it passed on the base commit.
-7. **Review.** A reviewer agent reads the diff and can reject it.
+6. **Budgets.** No changed file ends longer than 600 lines, or than it was at base when it was longer already. No folder that gains a file holds more than 40 source files directly, or more than it did at base. The diff adds no comment line on balance (TODOs and directives aside). A move or a split is free: a renamed file keeps its old length as its budget, and a comment that moves with its code costs nothing.
+7. **Checks.** Every check of the repo (typecheck, lint, tests, build) passes on the refactor, as it passed on the base commit.
+8. **Review.** A reviewer agent reads the diff and can reject it.
 
 ## Behaviour that must not change
 

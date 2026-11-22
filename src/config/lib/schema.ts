@@ -101,6 +101,10 @@ export const configSchema = z
       .object({
         maxFiles: z.number().int().positive().default(12),
         maxLines: z.number().int().positive().default(600),
+        /** A changed file may not end longer than this, or than it was at base. */
+        fileLines: z.number().int().positive().default(600),
+        /** A folder that gains a file may not hold more source files directly than this, or than it did at base. */
+        dirFiles: z.number().int().positive().default(40),
       })
       .prefault({}),
     mutation: z

@@ -1,5 +1,6 @@
 import type { SloppatrolConfig } from '../config/index.js';
 import type { GateVerdict, GuardFinding, Side } from '../domain/index.js';
+import { checkBudgets, measureSizes } from './lib/budgets.js';
 import { runCommand } from './lib/checks.js';
 import { readDiff } from './lib/diff.js';
 import { checkGuards, diffStat, type GuardRules } from './lib/guards.js';
@@ -18,7 +19,11 @@ export type Inspection = {
 /** Reads the worktree's change since `baseSha` and applies every guard to it. */
 export async function inspectChange(worktree: string, baseSha: string, rules: GuardRules): Promise<Inspection> {
   const diff = await readDiff(worktree, baseSha);
-  return { findings: checkGuards(diff, rules), stat: diffStat(diff), files: diff.map((f) => f.path) };
+  const guards = checkGuards(diff, rules);
+  const budgets = diff.length
+    ? checkBudgets(diff, await measureSizes(worktree, baseSha, diff, rules.tests), rules)
+    : [];
+  return { findings: [...guards, ...budgets], stat: diffStat(diff), files: diff.map((f) => f.path) };
 }
 
 /** The repo's prepare commands, for a fresh checkout or worktree. Throws on the first failure. */
@@ -49,7 +54,7 @@ export async function cleanup(commands: string[], dir: string, log?: (line: stri
 export function verdictMarkdown(verdict: GateVerdict): string {
   const guards = verdict.guards.length
     ? verdict.guards.map((g) => `- ✗ ${g.guard}${g.file ? ` \`${g.file}\`` : ''}: ${g.detail}`).join('\n')
-    : '- ✓ one side only, no frozen file, no suppression, no test removed, within the size limit';
+    : '- ✓ one side only, no frozen file, no suppression, no test removed, within the size limit and the file, folder and comment budgets';
   const checks = verdict.checks
     .map((c) => `- ${c.ok ? '✓' : '✗'} \`${c.name}\` (\`${c.command}\`) in ${(c.durationMs / 1000).toFixed(1)}s`)
     .join('\n');
