@@ -19,7 +19,10 @@ Use this page for any TypeScript or JavaScript code. Read `react.md` or `node-ba
 - `any`, `as any`, `as unknown as T` in domain code → type the value at the seam where it enters, then remove the cast.
 - `@ts-ignore` or `@ts-expect-error` without a linked reason → find the real type error and fix the type. Keep behaviour the same.
 - A deep import across modules (`from '../orders/lib/...'`) → export the needed name from an entry point of that module, then point the import there.
-- An `index.ts` that re-exports `*` from many files → replace it with explicit named exports of the names that outside code really uses.
+- An `index.ts` that re-exports `*` from many files → point each in-repo importer at the file that defines the name, and keep in the index only the names outside callers use. A barrel loads every module it names on each import.
+- `JSON.parse(x) as T`, `x as T`, `x!` on a value from outside → decode it with the schema library the repo already uses, where it enters. A new decode rejects input the cast let through, so it is a refactor only where the value is already decoded upstream and the cast is redundant; otherwise raise it as a finding.
+- `throw new Error(result.error)` after a call that returns an error field → let the adapter map it to the repo's typed failure, when the repo has one.
+- `catch {}` or `.catch(() => {})` → `.catch(nameThatSaysWhyFailureIsDropped)`, an empty function whose name is the reason.
 - `new SomeClient()` or `fetch(` inside a domain function → add a parameter for the dependency, with the current value as the default.
 - `process.env.X` read below the composition root → read it once at the root, then pass a typed config value in.
 - `Date.now()`, `new Date()`, `Math.random()`, `crypto.randomUUID()` in logic → inject a `clock` or `ids` port with the real one as the default.
@@ -49,10 +52,11 @@ export async function sendInvoice(id: InvoiceId, mail: Mailer = new SesMailer())
 
 Split a file without a change to its public exports:
 
-1. Move a cohesive group of functions to a new file in a `lib/` subfolder.
-2. In the old file, re-export the moved names with `export { a, b } from './lib/x'`.
-3. Keep every name, every default export and every `export type` exactly as before.
-4. Run the checks. Then update in-repo imports in a later change if you want to remove the re-export.
+1. Turn the file into a folder named for the concept. Its entry file at the root keeps the public names; the parts go inside. Never leave the old file as an anchor with prefixed siblings beside it.
+2. Move a whole cohesive group at a time: every function, type and constant of the concept goes together.
+3. Update every in-repo source import in the same change. When the old path cannot become the folder's entry (tests or outside callers import a file path the folder would break), keep the old file as the concept's entry that names its public parts; it is the interface, not a leftover. Never keep a re-export that no caller needs.
+4. Keep the package's public entry point (its `exports`, `main` or published `index`) exporting exactly the same names, default and `export type` included: callers outside the repo depend on it.
+5. Run the checks.
 
 Language traps that change behaviour silently:
 

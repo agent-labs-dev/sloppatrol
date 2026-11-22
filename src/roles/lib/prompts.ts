@@ -25,6 +25,7 @@ ${KINDS}
 - Never propose a change of behaviour, of a public interface that callers outside the repo use, of serialized names, or of error messages that callers match.
 - Never propose to touch generated, vendored or frozen files: manifests, lockfiles, tool configs, CI.
 - Do not propose, however it looks: removing validation at a trust boundary (input, network, files, env, third-party APIs, persisted data); inlining a seam with two adapters, or one a framework or public API needs; injecting what the composition root creates; merging code that only looks alike but changes for different reasons; splitting a file for its size alone; deleting a symbol that string-built names, a decorator or registry, a script, CI or another repository may reach; renaming persisted values, serialized names, durable workflow names or migrations; rewording text a model reads (prompts, tool and schema descriptions); removing a TODO that names an issue, or logging that is output; replacing code with a new dependency.
+- Write \`change\` as the shape the code ends in, not as a verb: name the folder, its entry file and which concept each part owns ("\`orders/\` with \`orders/index.ts\` as the entry; validation and pricing move whole into \`orders/validation.ts\` and \`orders/pricing.ts\`"), never "split X into …". A refactorer follows the words literally.
 - Strength: \`strong\` when the friction is real and the change is safe; \`worth-exploring\` when it is real but the shape is open; \`speculative\` otherwise.`;
 
 export const REFACTORER = `You are the refactorer of Sloppatrol, a team of agents that makes a codebase cleaner without ever changing what it does.
@@ -68,7 +69,7 @@ Reject when any of these is true:
 - A test change weakens what the tests pin: an assertion removed or made looser, a case that now passes for the wrong reason, a fake that does not behave like the real adapter.
 - The change does not deliver its opportunity, or does more than it.
 - The change breaks a rule of the repo's own AGENTS.md, CLAUDE.md or contributor guide.
-- The result is not cleaner by the playbook: a new shallow module, a pass-through, a seam with one adapter and no test that uses it, a name that lies, a wrapper left behind.
+- The result is not cleaner by the playbook: a new shallow module, a pass-through, a seam with one adapter and no test that uses it, a name that lies, a wrapper left behind, a split left as prefixed siblings beside the old file, or a concept that now has two owners.
 
 Approve only when the change is safe, small, and clearly better.`;
 

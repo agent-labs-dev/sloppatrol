@@ -4,10 +4,14 @@ Use this page for client apps built with React on the web or React Native / Expo
 
 ## Shape
 
-- Split each screen into three layers. Each layer is a module with its own interface.
-  - **View**: components that take props and render. No fetch, no storage, no navigation calls.
-  - **Logic**: hooks and plain functions that own state transitions, validation and derived values.
-  - **Data**: a client module that talks to the network, storage or device APIs through a port.
+- Data flows one way: **adapter → service → store → hook → component**. Each step is a module with its own interface.
+  - **Adapter**: the only code that calls the network, storage, device APIs or a third-party library. It wraps each call once and maps its failure.
+  - **Service**: plain functions that decide: state transitions, validation, derived values. It gets its adapters as arguments.
+  - **Store**: the one owner of a piece of client state, driven by the service.
+  - **Hook**: the only bridge to React. It reads the store and starts actions.
+  - **Component**: takes props and renders. No fetch, no storage, no effects, no navigation calls.
+- Lifecycle effects live in one small kit of named hooks (`useOnce`, `useForeground`, `useSubscription`, ...). A raw `useEffect` in a feature is a value derived in render, work that belongs in the event handler, or a kit hook. When the kit lacks one, add it to the kit.
+- One shared kernel of helpers. A feature never keeps a private copy of a kernel helper.
 - A screen component composes these. It reads a hook, then renders views. It stays short.
 - Put pure logic in plain `.ts` files, not in hooks. A hook wraps that logic with React state. You can test the logic with no React at all.
 - Give each piece of state one owner. Server data lives in the data layer cache (for example TanStack Query). Form and UI state live in the nearest component that needs it. Global state holds only state that many distant screens share.
@@ -20,6 +24,8 @@ Use this page for client apps built with React on the web or React Native / Expo
 - A component file over about 250 lines that fetches, transforms and renders → extract the transform into a pure function, then the fetch into a hook.
 - `fetch(`, `axios.`, `AsyncStorage.`, `localStorage.` inside a component body or `useEffect` → move the call behind the data port.
 - `useEffect` that sets state derived from props or other state → compute the value during render, or with `useMemo`.
+- A raw `useEffect` that subscribes, polls or reacts to app state, when the repo has a kit hook for it → call the kit hook. Keep the timing (`layout` against passive), the dependencies and the cleanup the same.
+- A component or hook that imports the effect runtime, the SDK client or an adapter → reach it through the store or hook of its feature.
 - The same server data copied into `useState` and kept in sync by hand → read it from the query cache only.
 - Prop drilling of the same value through 3 or more layers that do not use it → pass it through a context that the owner provides, or compose with `children`.
 - A boolean prop that switches the whole layout (`isCompact`, `variant` with very different trees) → split into two components that share small parts.
@@ -52,8 +58,8 @@ Introduce a data port without a change in behaviour:
 
 Split a component file without a change to exports:
 
-1. Move a subcomponent to its own file.
-2. Keep the original file's default and named exports. Re-export moved names if outside code imports them.
+1. Move a subcomponent to its own file, inside a folder named for the feature when the file grows parts.
+2. Update every in-repo import of a moved name in the same change. Leave no re-export behind; keep only the names that callers outside the repo import.
 
 Traps that change behaviour silently:
 

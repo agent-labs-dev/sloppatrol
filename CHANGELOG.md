@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- `comments: { ban: true }` bans every comment but tool directives, owned TODOs, `External: … Retires when …` constraints and labelled contract docs. Every role then reads `playbook/comments.md` and works on removing the rest and on comments that contradict the code. Off by default.
+- Playbook rules: a split makes a folder and moves the whole concept, parse at the boundary once, failures are typed values, hosts discover features instead of importing them, dependencies point inward, and a rule a check can decide is a check. New smells for each, plus silent swallows and suppressions without a reason.
+
+### Changed
+
+- The TypeScript, React and Python split moves no longer leave re-exports at the old path: the old path becomes the concept's entry, or every import moves.
+- The React page describes one data flow, adapter → service → store → hook → component, with lifecycle effects in one kit of named hooks.
+
 ## [0.4.1] - 2026-11-18
 
 ### Fixed
