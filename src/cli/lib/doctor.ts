@@ -55,6 +55,9 @@ export async function doctor(loaded: LoadedConfig, out: (line: string) => void):
   out(
     `metrics    ${config.metrics.enabled ? `on: up to ${config.metrics.panel} more files scored per cycle, rubric ${RUBRIC_VERSION}` : 'off'}`,
   );
+  out(
+    `comments   ${config.comments.ban ? 'banned: the patrol removes them and fixes the ones the code contradicts' : 'why-comments kept'}`,
+  );
   out('\nNext: `sloppatrol check` proves your checks pass on main.');
   return ok;
 }

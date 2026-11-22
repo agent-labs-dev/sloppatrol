@@ -77,6 +77,7 @@ The agents follow a [playbook](../playbook/) of top-tier engineering practice, w
 - [Principles](../playbook/principles.md): deep modules, seams, ports and adapters, one owner per concept, separation of concerns, dependency injection, single responsibility, small files, no sediment. The vocabulary comes from Ousterhout, Feathers, Fowler, and [Matt Pocock's skills](https://github.com/mattpocock/skills).
 - [Testing](../playbook/testing.md): test through the interface; fakes injected through a seam, never a mocking library for your own code.
 - [Smells](../playbook/smells.md) and [Safety](../playbook/safety.md): what to look for, and the behaviour a refactor must keep.
+- [Comments](../playbook/comments.md), only when `comments.ban` is on: which comments may stay, how the rest move into names, types and docs, and how to fix comments that drift from the code.
 - One page per stack, picked from what the census detects: [TypeScript](../playbook/stacks/typescript.md), [React and React Native](../playbook/stacks/react.md), [Node backends](../playbook/stacks/node-backend.md), [Python](../playbook/stacks/python.md), [Go](../playbook/stacks/go.md), [Swift](../playbook/stacks/swift.md), [Kotlin](../playbook/stacks/kotlin.md), [Rust](../playbook/stacks/rust.md).
 
 Your repo's own rules win over the playbook.

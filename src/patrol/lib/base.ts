@@ -90,7 +90,7 @@ export async function roleContext(
   base: Checkout,
 ): Promise<{ ctx: RoleContext; census: Census }> {
   const census = await takeCensus(base.dir, loaded.config);
-  const playbook = await playbookFor(census.stack);
+  const playbook = await playbookFor(census.stack, loaded.config);
   // The rules come from the base checkout, which every role reads and no agent edits.
   const rules = (near: string[]) => readRepoRules(base.dir, loaded.dir, near);
   return { census, ctx: { loaded, store: deps.store, runtimeFor: deps.runtimeFor, playbook, rules, log: deps.log } };

@@ -13,6 +13,7 @@ checks:                                     # the oracle
 focus: [src/**]                             # where the surveyor looks (default: everywhere)
 ignore: [src/generated/**]                  # what no agent may change
 uncheckedTests: [tests/e2e/**]              # tests no check runs: no refactor may change them
+comments: { ban: false }                    # true: remove comments and fix the ones the code contradicts
 guards: { maxFiles: 12, maxLines: 600 }
 mutation: { sourceBugs: 2 }                 # bugs planted on lines a source refactor kept; 0 turns it off
 metrics: { enabled: true, panel: 100, tolerance: 0.5, judges: 3, parallel: 3 }   # panel: files newly scored per cycle; parallel: assessor sessions at once
@@ -23,6 +24,10 @@ agents:
 github: { enabled: true, draft: false, maxOpen: 3, labels: [sloppatrol] }
 patrol: { intervalMinutes: 60, pull: origin/main }
 ```
+
+## Comments
+
+Off by default: the agents delete comments that narrate or record history and keep the ones that say why. With `comments: { ban: true }` every role also reads [the comments page](../playbook/comments.md). Only tool directives, owned TODOs, `External: … Retires when …` constraints and labelled contract docs on exported names stay. The patrol then works on removing the rest (a name, a type, a contract or the owner's document carries what they said) and on comments that contradict the code. Scores the assessor already gave keep until a file changes, so the clarity mean moves as files are rescored.
 
 ## How hard the patrol works
 

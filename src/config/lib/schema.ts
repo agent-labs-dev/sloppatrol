@@ -91,6 +91,12 @@ export const configSchema = z
     focus: z.array(z.string()).default([]),
     /** Files no agent may change: generated code, vendored code, migrations. */
     ignore: z.array(z.string()).default([]),
+    /**
+     * `ban` bans every comment but the kinds `playbook/comments.md` lists: every
+     * role then works to remove the rest and to fix comments the code contradicts.
+     * Off, comments that say why stay.
+     */
+    comments: z.object({ ban: z.boolean().default(false) }).prefault({}),
     guards: z
       .object({
         maxFiles: z.number().int().positive().default(12),

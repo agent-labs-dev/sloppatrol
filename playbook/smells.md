@@ -11,6 +11,12 @@ Each smell is a heuristic, never a verdict. The format: what it is → the safe 
 - **Shotgun surgery**: one logical change needs edits in many files. → Gather what changes together into one module.
 - **Information leak**: two modules share knowledge of one format or rule, so a change to it touches both. → Give the knowledge one owner; the other module asks it.
 - **Deep import**: code imports another module's internal file. → Import from the module's entry point; export the name there if it belongs in the interface.
+- **Prefixed siblings**: a module split into `x.ts` plus `x_helpers.ts`, `x_phase.ts` beside it, with `x.ts` still the anchor. → Make `x/` a folder with its entry at the root and the parts inside; every caller moves in the same change.
+- **Half-moved concept**: a move that left some of a concept's functions, types or constants behind, so two modules own it. → Finish the move: one owner for the whole concept.
+- **Host imports feature**: a shell, router, settings page or registry imports each feature to list it. → Let each feature register itself, or let the host discover a file name; the host then imports none.
+- **Central list of every feature**: one file that imports every store or feature to reset, shut down or wire them. → A registry each feature joins in its own file.
+- **Feature cycle**: two features import each other, or shared code imports a feature. → Move the shared part into the feature that owns it, or pass it in as an argument.
+- **Re-export barrel**: an `index` that re-exports a subtree, or an old path that re-exports a moved name. → Callers import the file that defines the name; delete the re-export.
 
 ## Dependencies
 
@@ -27,6 +33,11 @@ Each smell is a heuristic, never a verdict. The format: what it is → the safe 
 - **Boolean or string mode flag**: a parameter that selects which of two behaviours runs. → Split into two functions, or use a union type the callee matches on.
 - **Optional fields valid only together**: `data?` and `error?` on one object. → A union of states.
 - **Repeated switch**: the same `switch` on the same type in many places. → One module owns the union and its branches.
+- **Cast at a read site**: `as T`, a non-null `!` or a re-check of a value's shape where it is used. → Decode it once where it enters, then trust the type. Removing a redundant cast after an existing decode is a refactor; adding a new decode rejects input the cast let through, so raise it as a finding.
+- **Plain-string id**: ids of different things all typed `string`. → A distinct id type, given where the id enters.
+- **Bound read from a schema**: `schema.shape.name.maxLength` in logic. → A named constant that the schema and the logic both use.
+- **Result object**: `{ ok: false, error }` returned beside `{ ok: true, value }` with no shared tagged type. → A typed failure the caller handles by name. Changing how a failure travels changes behaviour: raise it as a finding unless the repo already has the idiom.
+- **Open `else` over a closed set**: a match on a union or enum whose last branch assumes "the common case". → Handle every member, and make the unknown one fail loudly. Adding the failure changes behaviour: raise it as a finding.
 
 ## Code
 
@@ -36,6 +47,8 @@ Each smell is a heuristic, never a verdict. The format: what it is → the safe 
 - **Feature envy**: a function that uses another object's data more than its own. → Move it to the data.
 - **Dead code**: unused exports, parameters, branches, flags, files. → Delete them, with their tests' fixtures but never their test cases of live code.
 - **Comment narration**: a comment that restates the next line, explains a confusing line, or records history that belongs in version control ("used to", "changed in v2", "fixed the bug where"). → Delete it, renaming or restructuring until the line needs none (`simplify`). Keep comments that say why, public API docs, directives and licence headers. Text a model reads (prompts, tool and schema descriptions) is behaviour, not a comment.
+- **Silent swallow**: an empty `catch {}`, `.catch(() => {})`, `except: pass` or `_ = err` with no reason. → Call an empty function whose name is the reason (`catch { logoutFailsWhenNoUserIsSignedIn(); }`), taken from the comment that sat there or from what the code shows; the behaviour is the same. Never change what is caught.
+- **Suppression without a reason**: a lint or type suppression that names no rule, gives no reason, or no longer suppresses anything. → Fix the type or the code so it can go (`tighten-types`, `simplify`). Keep it when the cause is outside the repo, and then it names the cause and what retires it.
 - **Defensive noise**: a check, guard or `try`/`catch` for a case the program's own contracts rule out: a null check on a value the types say cannot be null, re-validation of data a previous layer validated, a handler around code that cannot throw that error. → Delete it where it can never fire, so every outcome stays the same (`simplify`). A guard at a trust boundary (input, network, files, env, third-party APIs, persisted data), one the type checker needs to narrow, and a handler that adds context or cleans up stay. A catch-all that swallows real errors is behaviour: removing it is not a refactor.
 - **Reinvented wheel**: hand-rolled code for what the standard library, the platform or a dependency the project already has does: retry loops, path joining, deep copy, date arithmetic, set operations, a homemade cache or event bus. → Call the existing facility where it gives the same result on every input the code sees, edge cases included (`dedupe`). Never add a dependency. Leave it when the runtime lacks the facility or the custom version has a stated reason.
 - **Session residue**: leftovers of the session that wrote the code: debug prints nothing reads, `TODO` or `FIXME` with no issue or condition, commented-out code, placeholder names (`foo`, `tmp2`, `newFunction`). → Delete the dead lines (`remove-dead-code`) or rename the placeholder (`rename`). Output a user, a test or a log pipeline reads is behaviour, and a debug mode a user can turn on is product: leave both. A TODO that names an issue or a condition stays.

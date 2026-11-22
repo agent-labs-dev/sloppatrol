@@ -24,7 +24,7 @@ Use this page for Python code: libraries, CLIs, Django and FastAPI apps, workers
 - `Model.objects.filter(` spread across views, serializers and tasks → put each query behind one repository or manager method.
 - `dict` passed around with known keys → introduce a `@dataclass` or `TypedDict` with the same keys.
 - Functions with 6 or more parameters that travel together → bundle them into one dataclass.
-- A module over about 400 lines with unrelated classes → split it and re-export from the old module.
+- A module over about 400 lines with unrelated classes → turn it into a package named for the concept and move each class to its own module inside; update every in-repo import.
 - Missing type hints on a public function → add hints that describe the current behaviour exactly, including `None`.
 - An ABC with one subclass and no test fake → apply the deletion test. Inline it, or keep it and add the fake.
 - `except Exception: pass` → raise this as a finding. Do not change it in a refactor.
@@ -46,9 +46,9 @@ def send_invoice(invoice_id: str, *, mailer: Mailer | None = None) -> None:
 
 Split a module without a change to its public names:
 
-1. Move a group of functions or classes to a new private module.
-2. In the old module, add `from ._new import name_a, name_b`. Keep `__all__` the same.
-3. Keep names that other code imports from the old path, including private names that tests or plugins import.
+1. Turn the module into a package named for the concept (`orders.py` becomes `orders/`), never a prefixed sibling (`orders_helpers.py`). Move a whole cohesive group at a time.
+2. The old import path stays valid as the package's `__init__.py`: it names the concept's public names, so callers outside the repo and the tests (which a source refactor may not edit) keep importing them from it. That entry is the module's interface, not sediment. Keep `__all__` the same.
+3. Point every in-repo source import of a part's private name at the module that now defines it.
 4. Check that no pickled data, Celery task names or Django migrations refer to the old dotted path. If they do, do not move that name.
 
 Traps that change behaviour silently:

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Stack } from '../census/index.js';
+import type { SloppatrolConfig } from '../config/index.js';
 
 /** Shipped in the npm package next to `dist/`. */
 const PLAYBOOK = fileURLToPath(new URL('../../playbook/', import.meta.url));
@@ -28,10 +29,11 @@ async function page(path: string): Promise<string | undefined> {
   return existsSync(path) ? (await readFile(path, 'utf8')).trim() : undefined;
 }
 
-/** The core pages, then the stack pages: what every role must follow. */
-export async function playbookFor(stack: Stack): Promise<string> {
+/** The core pages, the comments page when the repo bans comments, then the stack pages: what every role must follow. */
+export async function playbookFor(stack: Stack, config: Pick<SloppatrolConfig, 'comments'>): Promise<string> {
   const paths = [
     ...CORE.map((name) => join(PLAYBOOK, `${name}.md`)),
+    ...(config.comments.ban ? [join(PLAYBOOK, 'comments.md')] : []),
     ...stackPages(stack).map((name) => join(PLAYBOOK, 'stacks', `${name}.md`)),
   ];
   const pages = await Promise.all(paths.map(page));
