@@ -28,6 +28,12 @@ export type Proof = {
      * A source refactor: bugs planted on lines it kept, on main and on the
      * change. Each one the tests caught on main they must catch on the change.
      */
+    /**
+     * A source refactor that edited only comments and prose: with comments and
+     * blank lines removed, every changed code file is identical to main. No
+     * behaviour can differ, so no bug is planted.
+     */
+    codeUnchanged?: boolean;
     held?: (Mutation & { caughtBefore: boolean; beforeRunId: string; caughtAfter?: boolean; afterRunId?: string })[];
   };
   improvement?: Improvement;

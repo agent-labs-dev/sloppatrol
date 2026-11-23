@@ -36,6 +36,6 @@ A comment that contradicts the code is worse than none: an agent trusts it and c
 ## For each role
 
 - **Surveyor**: comment work is in scope on every survey. Prefer one folder or one concept per opportunity (`simplify`), the folders agents copy from first, and comments that drift from the code before comments that only narrate. Count what the opportunity removes in its `problem`.
-- **Refactorer**: a comment change never changes code, except a rename or an extraction from step 2. The code with its comments stripped must stay the same unless a step-2 rename was made, and every reference to a renamed name moves in the same change. Never add a comment outside the kinds that may stay.
+- **Refactorer**: a comment change never changes code, except a rename or an extraction from step 2. Keep a comment refactor comment-only where you can: the gate then proves it by comparing the code with comments stripped, and plants no bug. A step-2 rename makes the code differ, so it goes through the usual planted-bug proof, and every reference to a renamed name moves in the same change. Never add a comment outside the kinds that may stay.
 - **Reviewer**: reject a change that adds a comment outside those kinds, that drops a constraint without carrying it into a name, a type, a contract, an `External:` line or the owner's document, or that edits code to agree with a comment.
 - **Assessor**: under `clarity`, count every comment outside those kinds as noise, "why" comments included, and count drift as a misleading name.

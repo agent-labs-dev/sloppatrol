@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { takeCensus } from '../../census/index.js';
+import { censusMarkdown, takeCensus } from '../../census/index.js';
 import { DEFAULT_TEST_PATTERNS } from '../../globs/index.js';
 
 const scope = { tests: DEFAULT_TEST_PATTERNS, focus: [], ignore: [] };
@@ -36,6 +36,7 @@ describe('the guardrails of a repo', () => {
       'biome.json': '{}',
       '.dependency-cruiser.cjs': 'module.exports = {}',
       '.github/workflows/ci.yml': 'on: push',
+      'scripts/check-budgets.ts': 'export {};',
       'src/a.ts': 'export const a = 1;\n'.repeat(20),
       'src/a.test.ts': "it('a', () => {});",
     });
@@ -44,6 +45,7 @@ describe('the guardrails of a repo', () => {
       'Strict types': true,
       Linter: true,
       'Module boundaries': true,
+      Ratchets: true,
       CI: true,
       Tests: true,
     });
@@ -65,6 +67,21 @@ describe('the guardrails of a repo', () => {
     expect(
       (await strictTypes({ ...server, 'ui/api/gen.js': 'export const a = 1;\n'.repeat(20) }, ['ui/api/**']))?.present,
     ).toBe(true);
+  });
+
+  it("list the repo's ratchets, and the files with the most suppressions and comments", async () => {
+    const dir = repo({
+      'package.json': '{ "scripts": { "check:budgets": "node budgets.js", "test": "vitest" } }',
+      'src/loud.ts': '// one\n// two\n// biome-ignore lint/x: old\nexport const a = 1 as any;\n',
+      'src/quiet.ts': 'export const b = 2;\n',
+    });
+    const census = await takeCensus(dir, scope);
+    expect(census.guardrails.find((g) => g.name === 'Ratchets')?.evidence).toBe('package.json script `check:budgets`');
+    expect(census.suppressions).toEqual([{ path: 'src/loud.ts', count: 1 }]);
+    expect(census.comments).toEqual([{ path: 'src/loud.ts', count: 3 }]);
+    const text = censusMarkdown(census);
+    expect(text).toContain('## Suppressions in source');
+    expect(text).toContain('- src/loud.ts: 1');
   });
 
   it('are missing in a bare repo, with the reason', async () => {
