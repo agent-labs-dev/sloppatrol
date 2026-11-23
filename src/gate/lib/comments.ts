@@ -23,17 +23,8 @@ const SLASH = new Set([
   '.scss',
 ]);
 
-/** Where each comment starts and ends in the file, or nothing for a language it cannot read. */
-function commentRanges(path: string, text: string): [number, number][] | undefined {
+export function commentLines(path: string, text: string): number {
   const extension = extname(path).toLowerCase();
-  if (
-    !SCRIPT.has(extension) &&
-    !HASH.has(extension) &&
-    !SLASH.has(extension) &&
-    extension !== '.sql' &&
-    extension !== '.lua'
-  )
-    return undefined;
   const ranges = new Map<number, number>();
   const jsxText: { start: number; end: number }[] = [];
   if (SCRIPT.has(extension)) {
@@ -50,7 +41,7 @@ function commentRanges(path: string, text: string): [number, number][] | undefin
       for (const child of node.getChildren(source)) visit(child);
     };
     visit(source);
-  } else {
+  } else if (HASH.has(extension) || SLASH.has(extension) || extension === '.sql' || extension === '.lua') {
     let quote = '';
     const shell = extension === '.sh' || extension === '.bash';
     for (let i = 0; i < text.length; i++) {
@@ -102,12 +93,9 @@ function commentRanges(path: string, text: string): [number, number][] | undefin
       }
     }
   }
-  return [...ranges].filter(([start]) => !jsxText.some((range) => start >= range.start && start < range.end));
-}
-
-export function commentLines(path: string, text: string): number {
   const lines = new Set<number>();
-  for (const [start, end] of commentRanges(path, text) ?? []) {
+  for (const [start, end] of ranges) {
+    if (jsxText.some((range) => start >= range.start && start < range.end)) continue;
     const first = text.slice(0, start).split('\n').length;
     text
       .slice(start, end)
@@ -117,27 +105,4 @@ export function commentLines(path: string, text: string): number {
       });
   }
   return lines.size;
-}
-
-/**
- * The file with every comment, trailing space and blank line removed, or
- * nothing for a language it cannot read. A docstring is a string, so removing
- * one changes the code.
- */
-export function codeWithoutComments(path: string, text: string): string | undefined {
-  const ranges = commentRanges(path, text);
-  if (!ranges) return undefined;
-  let code = '';
-  let at = 0;
-  for (const [start, end] of ranges.sort((a, b) => a[0] - b[0])) {
-    if (start < at) continue;
-    code += text.slice(at, start);
-    at = end;
-  }
-  code += text.slice(at);
-  return code
-    .split('\n')
-    .map((line) => line.trimEnd())
-    .filter(Boolean)
-    .join('\n');
 }

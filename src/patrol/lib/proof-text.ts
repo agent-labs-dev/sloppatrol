@@ -27,7 +27,7 @@ export function proofMarkdown(proof: Proof): string {
     );
   if (b.codeUnchanged)
     lines.push(
-      '- **Comments only.** With comments and blank lines removed, every changed code file is identical to main, so no behaviour can differ and no bug was planted.',
+      '- **Comments only.** Every changed code file parses to the same tokens as on main, so no behaviour can differ and no bug was planted.',
     );
   const held = b.held?.filter((bug) => bug.caughtBefore) ?? [];
   if (b.held && !held.length)

@@ -29,8 +29,8 @@ export type Proof = {
      * change. Each one the tests caught on main they must catch on the change.
      */
     /**
-     * A source refactor that edited only comments and prose: with comments and
-     * blank lines removed, every changed code file is identical to main. No
+     * A source refactor that edited only comments and prose: every changed
+     * TypeScript or JavaScript file parses to the same tokens as on main. No
      * behaviour can differ, so no bug is planted.
      */
     codeUnchanged?: boolean;

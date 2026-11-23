@@ -38,15 +38,20 @@ describe('a change that edits only comments', () => {
 
   it.each([
     [
-      'line, block and trailing comments removed',
-      { 'src/a.ts': '/** Units: ms. */\nexport const wait = 5; // why\n\n/* gone */\nexport const b = 1;\n' },
+      'line, block, JSDoc and trailing comments removed',
+      {
+        'src/a.ts': '// header\n/** Units: ms. */\nexport const wait = 5; // why\n\n/* gone */\nexport const b = 1;\n',
+      },
       { 'src/a.ts': 'export const wait = 5;\nexport const b = 1;\n' },
       true,
     ],
     [
-      'a comment rewritten and moved to the owner doc',
-      { 'src/a.py': '# old note\nx = 1\n', 'docs/a.md': '# A\n' },
-      { 'src/a.py': '# External: the API caps at 1. Retires when v2 ships.\nx = 1\n', 'docs/a.md': '# A\n\nA note.\n' },
+      'a JSX comment rewritten, and a note moved to the owner doc',
+      { 'src/a.tsx': 'export const A = () => <p>{/* old */}hi</p>;\n', 'docs/a.md': '# A\n' },
+      {
+        'src/a.tsx': 'export const A = () => <p>{/* External: x. Retires when y. */}hi</p>;\n',
+        'docs/a.md': '# A\n\nA note.\n',
+      },
       true,
     ],
     [
@@ -62,18 +67,30 @@ describe('a change that edits only comments', () => {
       false,
     ],
     [
-      'a Python docstring removed',
-      { 'src/a.py': 'def f():\n    """Say hi."""\n    return 1\n' },
-      { 'src/a.py': 'def f():\n    return 1\n' },
+      'a block comment whose line break inserted a semicolon',
+      { 'src/a.js': 'export function f() {\n  return /*\n  note\n  */ 7;\n}\n' },
+      { 'src/a.js': 'export function f() {\n  return 7;\n}\n' },
+      false,
+    ],
+    [
+      'a trailing space inside a template literal',
+      { 'src/a.ts': 'export const t = `a \nb`; // note\n' },
+      { 'src/a.ts': 'export const t = `a\nb`;\n' },
       false,
     ],
     ['a new code file', { 'src/a.ts': 'export const a = 1;\n' }, { 'src/b.ts': '// b\n' }, false],
     ['a deleted code file', { 'src/a.ts': 'export const a = 1;\n', 'src/b.ts': 'x\n' }, { 'src/b.ts': null }, false],
-    ['code after a shell length expansion', { 'run.sh': 'echo ${#x} # note\n' }, { 'run.sh': 'echo ${#y}\n' }, false],
+    ['a Python comment, with no parser here', { 'src/a.py': '# note\nx = 1\n' }, { 'src/a.py': 'x = 1\n' }, false],
     [
-      'a language it cannot read',
-      { 'src/a.hs': '-- note\nmain = pure ()\n' },
-      { 'src/a.hs': 'main = pure ()\n' },
+      'a Go build directive',
+      { 'main.go': '//go:build linux\n\npackage main\n' },
+      { 'main.go': '//go:build darwin\n\npackage main\n' },
+      false,
+    ],
+    [
+      'MDX, which runs code',
+      { 'docs/a.mdx': 'export const n = 1;\n', 'src/a.ts': '// x\nexport const a = 1;\n' },
+      { 'docs/a.mdx': 'export const n = 2;\n', 'src/a.ts': 'export const a = 1;\n' },
       false,
     ],
   ])('%s', async (_name, before, after, expected) => {
