@@ -50,6 +50,32 @@ async function strictTypes(root: string, files: string[], stack: Stack): Promise
   };
 }
 
+const RATCHET = /budget|ratchet|baseline|shrink-only/i;
+
+function packageScripts(pkg: string): Record<string, string> {
+  try {
+    return (JSON.parse(pkg) as { scripts?: Record<string, string> }).scripts ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * The repo's own checks that debt may only shrink: a budget or ratchet script,
+ * a baseline file, or a package script of that name. Work that retires their
+ * entries comes first (playbook: shrink the debt the repo already measures).
+ */
+function ratchets(files: string[], pkg: string): string | undefined {
+  const scripts = Object.keys(packageScripts(pkg));
+  const found = [
+    ...files.filter((f) => RATCHET.test(f.split('/').pop() ?? '') && !/\.(md|txt|lock)$/.test(f)),
+    ...scripts.filter((name) => RATCHET.test(name)).map((name) => `package.json script \`${name}\``),
+  ];
+  return found.length
+    ? `${found.slice(0, 5).join(', ')}${found.length > 5 ? `, and ${found.length - 5} more` : ''}`
+    : undefined;
+}
+
 /**
  * The repo-wide guardrails that keep an agent from changing code wrong,
  * found from files alone. Each one turns a wrong edit into a failed check.
@@ -90,6 +116,11 @@ export async function detectGuardrails(
           ? 'package.json: boundary lint'
           : undefined),
       'Nothing stops a deep import across modules.',
+    ),
+    found(
+      'Ratchets',
+      ratchets(files, pkg),
+      'No budget, ratchet or baseline check: nothing in the repo stops debt from growing, so only the gate holds the line.',
     ),
     found('CI', has(/^(\.github\/workflows\/|\.gitlab-ci\.yml$|\.circleci\/)/), 'No CI config found.'),
     found('Tests', testFiles > 0 ? `${testFiles} test files` : undefined, 'No test files: nothing pins behaviour.'),

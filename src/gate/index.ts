@@ -6,6 +6,7 @@ import { readDiff } from './lib/diff.js';
 import { checkGuards, diffStat, type GuardRules } from './lib/guards.js';
 
 export { checksKey, runRecordedChecks } from './lib/recorded.js';
+export { codeUnchanged } from './lib/same-code.js';
 export { testsPassed } from './lib/test-count.js';
 export type { GuardRules };
 

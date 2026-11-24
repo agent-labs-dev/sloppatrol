@@ -9,6 +9,8 @@
 - `comments: { ban: true }` bans every comment but tool directives, owned TODOs, `External: … Retires when …` constraints and labelled contract docs. Every role then reads `playbook/comments.md` and works on removing the rest and on comments that contradict the code. Off by default.
 - Playbook rules: a split makes a folder and moves the whole concept, parse at the boundary once, failures are typed values, hosts discover features instead of importing them, dependencies point inward, and a rule a check can decide is a check. New smells for each, plus silent swallows and suppressions without a reason.
 - Gate budgets on the touched files, from nebula-desktop's and nebula-mobile's `check:budgets`: a changed file may not end longer than `guards.fileLines` (600), or than it was at base; a folder that gains a file may not hold more than `guards.dirFiles` (40) source files directly, or than it did at base; and a refactor adds no comment line on balance. Moves and splits are free.
+- A comment-only proof for TypeScript and JavaScript: when every changed code file parses to the same tokens as on main, the proof says so and the gate plants no bug, which saves the test runs. Other languages keep the planted bugs.
+- The census lists the source files with the most suppressions and comment lines, and a `Ratchets` guardrail for the repo's own budget, ratchet or baseline checks. The surveyor starts with the debt they measure.
 
 ### Changed
 

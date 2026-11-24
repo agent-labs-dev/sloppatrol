@@ -25,6 +25,10 @@ export function proofMarkdown(proof: Proof): string {
     lines.push(
       `- **The tests can fail.** Planted bug in \`${b.mutation.file}\`: \`${b.mutation.find.trim().slice(0, 80)}\` → \`${b.mutation.replace.trim().slice(0, 80)}\`. ${b.mutation.caught ? 'A test check turned red.' : 'No test check caught it.'}${b.mutation.caughtBefore === false ? ' The old tests on main missed it: this is new coverage.' : ''} (${b.mutation.why})`,
     );
+  if (b.codeUnchanged)
+    lines.push(
+      '- **Comments only.** Every changed code file parses to the same tokens as on main, so no behaviour can differ and no bug was planted.',
+    );
   const held = b.held?.filter((bug) => bug.caughtBefore) ?? [];
   if (b.held && !held.length)
     lines.push(

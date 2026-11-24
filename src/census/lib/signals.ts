@@ -1,10 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tryGit } from '../../git/index.js';
+import { measure } from '../../metrics/index.js';
 
 export type FileSize = { path: string; lines: number };
 export type MockUse = { path: string; count: number; sample: string };
 export type Churn = { path: string; commits: number };
+/** How many lines of one kind a file holds. */
+export type LineCount = { path: string; count: number };
 
 /**
  * Mocking libraries and patches of the team's own code. Each hit is a
@@ -38,11 +41,17 @@ export async function measureFiles(
   root: string,
   sources: string[],
   tests: string[],
-): Promise<{ largest: FileSize[]; mocks: MockUse[] }> {
+): Promise<{ largest: FileSize[]; mocks: MockUse[]; suppressions: LineCount[]; comments: LineCount[] }> {
   const sizes: FileSize[] = [];
+  const suppressions: LineCount[] = [];
+  const comments: LineCount[] = [];
   for (const path of sources) {
     const body = await readCapped(root, path);
-    if (body !== undefined) sizes.push({ path, lines: body.split('\n').length });
+    if (body === undefined) continue;
+    sizes.push({ path, lines: body.split('\n').length });
+    const signals = measure(body);
+    if (signals.suppressions) suppressions.push({ path, count: signals.suppressions });
+    if (signals.commentLines) comments.push({ path, count: signals.commentLines });
   }
   const mocks: MockUse[] = [];
   for (const path of tests) {
@@ -55,6 +64,8 @@ export async function measureFiles(
   return {
     largest: sizes.sort((a, b) => b.lines - a.lines).slice(0, 25),
     mocks: mocks.sort((a, b) => b.count - a.count).slice(0, 25),
+    suppressions: suppressions.sort((a, b) => b.count - a.count).slice(0, 25),
+    comments: comments.sort((a, b) => b.count - a.count).slice(0, 25),
   };
 }
 

@@ -3,7 +3,15 @@ import { listFiles } from '../git/index.js';
 import { matchesAny } from '../globs/index.js';
 import { detectGuardrails } from './lib/guardrails.js';
 import { type Navigation, navigable, navigationOf } from './lib/navigation.js';
-import { type Churn, churn, type FileSize, type MockUse, measureFiles, readCapped } from './lib/signals.js';
+import {
+  type Churn,
+  churn,
+  type FileSize,
+  type LineCount,
+  type MockUse,
+  measureFiles,
+  readCapped,
+} from './lib/signals.js';
 import { detectStack, languageOf, type Stack } from './lib/stack.js';
 
 export type { Stack };
@@ -18,6 +26,10 @@ export type Census = {
   testFiles: number;
   largest: FileSize[];
   mocks: MockUse[];
+  /** Source files with lint or type suppressions, the most first. */
+  suppressions: LineCount[];
+  /** Source files with comment lines, the most first. */
+  comments: LineCount[];
   churn: Churn[];
   navigation: Navigation;
 };
@@ -102,6 +114,11 @@ export function censusMarkdown(census: Census): string {
     list(census.largest, (f) => `- ${f.path}: ${f.lines}${importedBy(f.path)}`),
     '## Tests that use a mocking library',
     list(census.mocks, (m) => `- ${m.path}: ${m.count} uses, e.g. \`${m.sample}\``),
+    '## Suppressions in source (lint and type, by file)',
+    'Each one is a check the code does not pass. Fixing the cause so a suppression can go is a refactor; one that names a cause outside the repo stays.',
+    list(census.suppressions, (s) => `- ${s.path}: ${s.count}${importedBy(s.path)}`),
+    '## Most commented source files (comment lines)',
+    list(census.comments.slice(0, 15), (c) => `- ${c.path}: ${c.count}`),
     '## Most changed files (last 300 commits)',
     list(census.churn.slice(0, 20), (c) => `- ${c.path}: ${c.commits} commits${importedBy(c.path)}`),
     '## Navigation aids: where to look, not evidence',
