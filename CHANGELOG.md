@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-24
+
 ### Added
 
 - `comments: { ban: true }` bans every comment but tool directives, owned TODOs, `External: … Retires when …` constraints and labelled contract docs. Every role then reads `playbook/comments.md` and works on removing the rest and on comments that contradict the code. Off by default.
