@@ -29,18 +29,11 @@ Sloppatrol follows its own [playbook](playbook/principles.md).
 
 ## Release
 
-A release is a signed `vX.Y.Z` tag on `main`.
+A release is one click: **Actions → Release → Run workflow** on `main`, picking `patch`, `minor` or `major`.
 
-1. Open a PR that sets `version` in `package.json` and turns `## [Unreleased]` in `CHANGELOG.md` into `## [X.Y.Z] - YYYY-MM-DD`, with a new empty `## [Unreleased]` above it. Merge it.
-2. Tag the merged commit and push the tag:
+Add each change's entry under `## [Unreleased]` in `CHANGELOG.md`, in the PR that makes it. The release job bumps the newest `vX.Y.Z` tag, takes the Unreleased entries that tag did not ship, runs the checks and the tests, publishes to npm, then pushes a `release: sloppatrol vX.Y.Z` commit as the `vX.Y.Z` tag and opens a GitHub release whose notes are those entries.
 
-   ```bash
-   git switch main && git pull --ff-only
-   git tag -s vX.Y.Z -m "sloppatrol vX.Y.Z"
-   git push origin vX.Y.Z
-   ```
-
-The tag runs `release.yml`. It checks that the tag is signed, on `main` and matches `package.json` and a `CHANGELOG.md` entry, runs the checks and the tests, publishes to npm, then opens a GitHub release whose notes are that version's `CHANGELOG.md` entry.
-
+- `main` takes only signed, reviewed PRs, so the release commit lives only on its tag. `package.json` on `main` keeps an older version, and released entries stay under Unreleased there; the tag's `CHANGELOG.md` has them under their version.
+- The job fails without publishing when no Unreleased entry is new since the last tag.
 - npm trusts the workflow through OIDC, so no npm token is stored. The trusted publisher names `release.yml` and the `npm` environment, which accepts deployments from `main` and `v*` tags.
-- A rerun skips the npm publish and the GitHub release when they already exist.
+- A rerun is safe until the tag is pushed: it finds the version already on npm and skips the publish. If only `gh release create` failed, create that release by hand instead of rerunning, which would bump again.

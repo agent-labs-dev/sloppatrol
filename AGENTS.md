@@ -10,8 +10,8 @@ re-decide what [docs/adr/](docs/adr/) records.
 - `pnpm install --frozen-lockfile`, then `pnpm gate`: biome, module boundaries, types, knip and the tests.
 - `pnpm gate:changed`: the same, linting only files changed against `origin/main` and running the tests they reach.
 - `pnpm build` compiles to `dist/`. CI also runs `actionlint` and `zizmor --offline .github`.
-- Release: a version/changelog PR, then a signed `vX.Y.Z` tag on `main` (see `CONTRIBUTING.md`); publishing needs
-  explicit authorization.
+- Release: one click on the Release workflow, from Unreleased entries in `CHANGELOG.md` (see `CONTRIBUTING.md`);
+  publishing needs explicit authorization.
 
 ## Invariants
 
