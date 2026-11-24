@@ -6,14 +6,28 @@ import {
   type Proof,
   type Refactor,
 } from '../../domain/index.js';
-import { checksKey, guardRulesFor, inspectChange, runRecordedChecks, testsPassed } from '../../gate/index.js';
+import {
+  checksKey,
+  codeUnchanged,
+  guardRulesFor,
+  inspectChange,
+  runRecordedChecks,
+  testsPassed,
+} from '../../gate/index.js';
 import { type RoleContext, review } from '../../roles/index.js';
 import { changedFiles, heldProof, improvementProof, mutationProof } from './proof.js';
 import { proofMarkdown } from './proof-text.js';
 
 export type Judgement = Pick<Refactor, 'status' | 'reason' | 'verdict' | 'proof' | 'diffStat'>;
 
-const GUARDS = ['one side', 'no frozen file', 'no suppression', 'no test removed', 'within the size limit'];
+const GUARDS = [
+  'one side',
+  'no frozen file',
+  'no suppression',
+  'no test removed',
+  'within the size limit',
+  'within the file, folder and comment budgets',
+];
 
 /**
  * The gate on a committed refactor, in order: guards, checks, the mutation
@@ -110,7 +124,10 @@ export async function judge(
     await ctx.store.setStatus({ role: 'gate', state: 'done', detail: `Mutation caught on ${branch}` });
   }
 
-  if (opportunity.side === 'source' && config.mutation.sourceBugs > 0) {
+  if (opportunity.side === 'source' && (await codeUnchanged(worktree, baseSha))) {
+    proof.behaviour.codeUnchanged = true;
+    await save({ proof });
+  } else if (opportunity.side === 'source' && config.mutation.sourceBugs > 0) {
     await ctx.store.setStatus({ role: 'gate', state: 'running', detail: `Planted bugs on ${branch}` });
     const held = await heldProof(ctx, {
       worktree,
