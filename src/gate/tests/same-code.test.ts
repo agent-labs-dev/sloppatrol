@@ -139,6 +139,18 @@ describe('a change that edits only comments', () => {
       false,
     ],
     [
+      'a sourceMappingURL directive with a relative URL changed',
+      { 'src/a.js': 'export const x = 1;\n//# sourceMappingURL=./a.js.map\n' },
+      { 'src/a.js': 'export const x = 1;\n//# sourceMappingURL=../b.js.map\n' },
+      false,
+    ],
+    [
+      'a sourceURL directive with an absolute URL changed',
+      { 'src/a.js': 'export const x = 1;\n//# sourceURL=/a.js\n' },
+      { 'src/a.js': 'export const x = 1;\n//# sourceURL=/b.js\n' },
+      false,
+    ],
+    [
       'a shebang changed',
       { 'src/a.ts': '#!/usr/bin/env node\nexport const x = 1;\n' },
       { 'src/a.ts': '#!/usr/bin/env bun\nexport const x = 1;\n' },

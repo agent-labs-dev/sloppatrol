@@ -7,7 +7,7 @@ const SCRIPT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.
 const PROSE = new Set(['.md', '.markdown', '.rst', '.txt', '.adoc']);
 const LINE_TERMINATOR = /[\r\n\u2028\u2029]/;
 const DIRECTIVE_COMMENT =
-  /^\/\/\/|^\/\*!|@(?:jsx(?:Frag|ImportSource|Runtime)?|ts-(?:ignore|expect-error|nocheck|check)|flow|noflow|format|babel|vite-ignore|preserve|license|__PURE__|__NO_SIDE_EFFECTS__|__KEY__|__MANGLE_PROP__)\b|#(?:__PURE__|__NO_SIDE_EFFECTS__|__KEY__|__MANGLE_PROP__)\b|\b(?:webpack[A-Z]\w*|turbopack[A-Z]\w*|vite-ignore|sourceMappingURL=|sourceURL=|istanbul\s+ignore|(?:v8|c8)\s+ignore|node:coverage|biome-ignore|eslint-(?:disable|enable|env)|oxlint-disable)\b/;
+  /^\/\/\/|^\/\*!|@(?:jsx(?:Frag|ImportSource|Runtime)?|ts-(?:ignore|expect-error|nocheck|check)|flow|noflow|format|babel|vite-ignore|preserve|license|__PURE__|__NO_SIDE_EFFECTS__|__KEY__|__MANGLE_PROP__)\b|#(?:__PURE__|__NO_SIDE_EFFECTS__|__KEY__|__MANGLE_PROP__)\b|\bsource(?:Mapping)?URL=|\b(?:webpack[A-Z]\w*|turbopack[A-Z]\w*|vite-ignore|istanbul\s+ignore|(?:v8|c8)\s+ignore|node:coverage|biome-ignore|eslint-(?:disable|enable|env)|oxlint-disable)\b/;
 
 /**
  * The file's tokens as the compiler parses them, each marked when a line break
